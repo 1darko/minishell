@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/10 14:03:36 by dakojic           #+#    #+#             */
-/*   Updated: 2024/07/22 12:07:26 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/07/22 12:13:55 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -535,6 +535,8 @@ void nulterminator(t_cmd *cmd)
 
     return ;
 }
+
+// Global return should be 2 when exiting program if it fails
 int checkblock(char *str)
 {
     int i;
@@ -609,63 +611,6 @@ t_cmd *parsecmd(char *str)
     return (cmdtree);
 }
 
-// void print_pipecmd(t_pipecmd *cmd, int level) {
-//     printf("%*sPipecmd\n", level * 2, "");
-//     print_cmd(cmd->left, level + 1); // Assuming cmd->left points to the left command in the pipe
-//     print_cmd(cmd->right, level + 1); // Assuming cmd->right points to the right command in the pipe
-// }
-
-// void print_blockcmd(t_cmd *cmd, int level) {
-//     printf("%*sBlockcmd\n", level * 2, "");
-//     // Assuming cmd->cmd points to the command inside the block
-//     print_cmd(cmd->args[0], level + 1);
-// }
-
-// void print_cmd(t_cmd *cmd, int level) {
-//     if (cmd == NULL) return;
-//     switch (cmd->type) {
-//         case EXEC:
-//             print_execcmd((t_execcmd *)cmd, level);
-//             break;
-//         case PIPE:
-//             print_pipecmd((t_pipecmd *)cmd, level);
-//             break;
-//         case BLOC:
-//             print_blockcmd((t_cmd *)cmd, level);
-//             break;
-//         // Add more cases here for other types of commands
-//     }
-// }
-
-// void printer(t_cmd *cmd, int s)
-// {
-//     t_execcmd *ex;
-//     t_pipecmd *pi;
-//     t_redircmd *re;
-//     printf("Jai ete appele par : %d\n", s);
-//     if(cmd->type == 1)
-//     {
-//         ex = (t_execcmd *)cmd;
-//         printf("EXEC\n");
-//         printf("args[0] : %s\n", ex->args[0]);
-//     }
-//     else if(cmd->type == 2)
-//     {
-//         re = (t_redircmd *)cmd;
-//         printf("REDIR\n");
-//         printf("file : %s\n", re->file);
-//     }
-//     else if(cmd->type == 3)
-//     {
-//         pi = (t_pipecmd *)cmd;
-//         printf("PIPE\n");
-//         printf("left : %d\n", pi->left->type);
-//         printer(pi->left, pi->type);
-//         printf("right : %d\n", pi->right->type);
-//         printer(pi->right, pi->type);
-//     }
-
-// }
 
 void printer(t_cmd *cmd, int s, int level) {
     t_execcmd *ex;
