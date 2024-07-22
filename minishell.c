@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/10 14:03:36 by dakojic           #+#    #+#             */
-/*   Updated: 2024/07/22 12:35:38 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/07/22 16:46:56 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,6 +86,7 @@ typedef struct s_herecmd
     char *here;
     char *ehere;
 }   t_herecmd;
+
 t_cmd *parseand(char **ptr, char *end);
 t_cmd *parseor(char **ptr, char *end);
 void nulterminator(t_cmd *cmd);
@@ -602,6 +603,10 @@ void printer(t_cmd *cmd, int s, int level) {
             printf("  ");
         }
         printf("args[0] : %s\n", ex->args[0]);
+        printf("args[1] : %s\n", ex->args[1]);
+        printf("args[2] : %s\n", ex->args[2]);
+        printf("args[3] : %s\n", ex->args[3]);
+
     } 
     else if (cmd->type == 2) // PRINT REDIR
     {
@@ -683,8 +688,8 @@ void printer(t_cmd *cmd, int s, int level) {
         printf("args[0] : %s\n", ex->args[0]);
     } 
 }
-int main(int ac, char **av)
-{
-    printer(parsecmd(av[1]), 0, 0);
-    // parsecmd(av[1]);
-}
+// int main(int ac, char **av)
+// {
+//     printer(parsecmd(av[1]), 0, 0);
+//     // parsecmd(av[1]);
+// }
