@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/10 14:03:36 by dakojic           #+#    #+#             */
-/*   Updated: 2024/07/22 12:13:55 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/07/22 12:35:38 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -223,7 +223,7 @@ t_cmd *pipecmd(t_cmd *left, t_cmd *right)
 
 t_cmd *andcmd(t_cmd *left, t_cmd *right)
 {
-    t_pipecmd *cmd;
+    t_andcmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
     ft_memset(cmd, 0, sizeof(*cmd));
@@ -235,7 +235,7 @@ t_cmd *andcmd(t_cmd *left, t_cmd *right)
 
 t_cmd *orcmd(t_cmd *left, t_cmd *right)
 {
-    t_pipecmd *cmd;
+    t_orcmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
     ft_memset(cmd, 0, sizeof(*cmd));
@@ -301,7 +301,7 @@ int gettoken(char **ptr, char *end, char **ptr_token, char **ptr_endtoken)
         }
         if(check == '&')
         {
-            temp += 2;
+            temp++;
             check = 'a';
         }
     }
@@ -400,54 +400,22 @@ t_cmd *parsepipe(char **ptr, char *end)
         printf("Je suis dans parsepipe\n");
         if (lfsymbol(ptr, end, "|"))
         {
-            if(gettoken(ptr, end, 0, 0) == 'o')
-                cmd = orcmd(cmd, parsepipe(ptr, end));
+            if(gettoken(ptr, end, 0, 0) == 'o'){printf("JE RENTRE ICI ||\n");
+                cmd = orcmd(cmd, parsepipe(ptr, end));}
             else
                 cmd = pipecmd(cmd, parsepipe(ptr, end));
         }
-        // else if(lfsymbol(ptr, end, "|"))
-        // {
-            // gettoken(ptr, end, 0, 0);
-            // cmd = pipecmd(cmd, parsepipe(ptr, end));
-        // }
         else if (lfsymbol(ptr, end, "&"))
         {
+            printf("JE RENTRE ICI\n");
             gettoken(ptr, end, 0, 0);
             printf("Avant de renter dans andcmd le type est : %d\n", cmd->type);
             cmd = andcmd(cmd, parsepipe(ptr, end));
             printf("En sortant apres le andcmd le type est : %d\n", cmd->type);
         }
-        // else if (lfsymbol(ptr, end, "||"))
-        // {
-            // gettoken(ptr, end, 0, 0);
-            // cmd = orcmd(cmd, parsepipe(ptr, end));
-        // }
         else
             break;
     }
-    // if(*ptr < end && lfsymbol(ptr, end, "|"))
-    // {
-        // gettoken(ptr, end, 0, 0);
-        // cmd = pipecmd(cmd, parsepipe(ptr, end));
-    // }
-    // printf("|||| Main type : %d\n", ((t_execcmd *)cmd)->type);
-    // if(cmd->type == 1)
-    // {
-    //     printf("||| ICI EXEC TYPE : %d\n", ((t_execcmd *)cmd)->type);
-    //     printf("||| ICI EXEC ARGS : %s\n", ((t_execcmd *)cmd)->args[0]);
-    // }
-    // else
-    // if(cmd->type == 3)
-    // {
-
-    //     // printf("ICI PIPE RIGHT cmd exec : %s\n", ((t_execcmd *)((t_pipecmd *)((t_pipecmd *)cmd)->right)->right)->args[0]);
-    //     // printf("ICI PIPE RIGHT cmd exec : %d\n", (((t_pipecmd *)cmd)->right->type));
-    //     // printf("ICI PIPE RIGHT cmd exec : %d\n", (((t_pipecmd *)cmd)->right.((t_execcmd *)cmd)->type));
-    //     // printf("ICI PIPE RIGHT cmd exec : %d\n", ((b *)cmd)->right.cmd->type);
-
-    // }
-    // else
-    // printf("ICI cmd type : %d\n", cmd->type);
     return (cmd);
 }
 
@@ -616,6 +584,8 @@ void printer(t_cmd *cmd, int s, int level) {
     t_execcmd *ex;
     t_pipecmd *pi;
     t_redircmd *re;
+    t_orcmd *or;
+    t_andcmd *and;
     // Créer une indentation basée sur le niveau actuel
     for (int i = 0; i < level; i++) {
         printf("  ");
@@ -667,7 +637,7 @@ void printer(t_cmd *cmd, int s, int level) {
         printf("right : %d\n", pi->right->type);
         printer(pi->right, pi->type, level + 1); // Augmenter le niveau pour l'indentation
     } else if (cmd->type == 5) {
-        pi = (t_andcmd *)cmd;
+        and = (t_andcmd *)cmd;
         for (int i = 0; i < level; i++) {
             printf("  ");
         }
@@ -675,16 +645,16 @@ void printer(t_cmd *cmd, int s, int level) {
         for (int i = 0; i < level; i++) {
             printf("  ");
         }
-        printf("left : %d\n", pi->left->type);
-        printer(pi->left, pi->type, level + 1); // Augmenter le niveau pour l'indentation
+        printf("left : %d\n", and->left->type);
+        printer(and->left, and->type, level + 1); // Augmenter le niveau pour l'indentation
         for (int i = 0; i < level; i++) {
             printf("  ");
         }
-        printf("right : %d\n", pi->right->type);
-        printer(pi->right, pi->type, level + 1); // Augmenter le niveau pour l'indentation
+        printf("right : %d\n", and->right->type);
+        printer(and->right, and->type, level + 1); // Augmenter le niveau pour l'indentation
     }
     else if (cmd->type == 6) {
-        pi = (t_pipecmd *)cmd;
+        or = (t_orcmd *)cmd;
         for (int i = 0; i < level; i++) {
             printf("  ");
         }
@@ -692,13 +662,13 @@ void printer(t_cmd *cmd, int s, int level) {
         for (int i = 0; i < level; i++) {
             printf("  ");
         }
-        printf("left : %d\n", pi->left->type);
-        printer(pi->left, pi->type, level + 1); // Augmenter le niveau pour l'indentation
+        printf("left : %d\n", or->left->type);
+        printer(or->left, or->type, level + 1); // Augmenter le niveau pour l'indentation
         for (int i = 0; i < level; i++) {
             printf("  ");
         }
-        printf("right : %d\n", pi->right->type);
-        printer(pi->right, pi->type, level + 1); // Augmenter le niveau pour l'indentation
+        printf("right : %d\n", or->right->type);
+        printer(or->right, or->type, level + 1); // Augmenter le niveau pour l'indentation
     }
     if (cmd->type == 8) 
     {
