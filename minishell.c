@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/10 14:03:36 by dakojic           #+#    #+#             */
-/*   Updated: 2024/07/22 11:49:22 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/07/22 12:07:26 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -519,7 +519,7 @@ void nulterminator(t_cmd *cmd)
         nulterminator((t_cmd *)((t_pipecmd *)cmd)->right);
     }
     else if(cmd->type == REDIR)
-        nulterminator((t_cmd *)((t_redircmd *)cmd)->cmd);
+        nulredir(cmd);
     else if(cmd->type == EXEC)
         nulargs(cmd);   
     if(cmd->type == OR)
