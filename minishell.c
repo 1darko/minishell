@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/10 14:03:36 by dakojic           #+#    #+#             */
-/*   Updated: 2024/07/19 18:14:13 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/07/22 11:49:22 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -339,8 +339,8 @@ t_cmd *parseblock(char **ps, char *es)
     gettoken(ps, es, 0, 0);
     // printf("je suis a %s\n", *ps);
     cmd = parseline(ps, es);
-    if(!lfsymbol(ps, es, ")"))
-        problem("Missing ) block aint closed");
+    // if(!lfsymbol(ps, es, ")"))
+    //     problem("Missing ) block aint closed");
     gettoken(ps, es, 0, 0);
     cmd = parseredirs(cmd, ps, es);
     return (cmd);
@@ -549,11 +549,7 @@ int checkblock(char *str)
         if(str[i] == ')')
             j--;
         if(j < 0)
-            return (0);
-        if(str[i] == '&' && str[i + 1] == '&' && j <= 0) 
-            return (0);
-        if(str[i] == '|' && str[i + 1] == '|' && j <= 0) 
-            return (0);             
+            return (0);   
         i++;
     }
     return (j == 0);
@@ -600,8 +596,8 @@ t_cmd *parsecmd(char *str)
     t_cmd *cmdtree;
     char *end;
 
-    // if(!checkblock(str))
-    //     problem("syntax error");
+    if(!checkblock(str)) // parse des () pour eviter de free apres tout l'arbre une fois parseline lance
+        problem("syntax error");
     end = str + ft_strlen(str);
     cmdtree = parseline(&str, end);
     // A enlever a la fin FPRINTF pour debug
