@@ -1,14 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   minishell.c                                        :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2024/07/10 14:03:36 by dakojic           #+#    #+#             */
-/*   Updated: 2024/07/22 16:46:56 by dakojic          ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
 
 #include <stdio.h>
 #include <unistd.h>
@@ -19,26 +8,58 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#define EXEC 1
-#define REDIR 2
-#define PIPE 3
-#define BLOC 4
-#define AND 5
-#define OR 6
-#define HERE 7
-#define EMPTY 8
+// #define EXEC 1
+// #define REDIR 2
+// #define PIPE 3
+// #define BLOC 4
+// #define AND 5
+// #define OR 6
+// #define HERE 7
+// #define EMPTY 8
 
 
-#define MAXARGS 12
-#define MAXLINE 4096
+#define MAXARGS 4000
+#define MAXLINE 1500001
 
 
 
+typedef enum e_type
+{
+    SHELL,
+    EXEC,
+    REDIR,
+    PIPE,
+    BLOC,
+    AND,
+    OR,
+    HERE,
+    EMPTY
+}   t_type;
 // Structs 
 typedef struct s_cmd
 {
     int type;
 }   t_cmd;
+
+typedef struct s_env
+{
+    char **env;
+}   t_env;
+
+typedef struct s_var
+{
+    char *alias;
+    char *value;
+    struct s_var *next;
+}   t_var;
+
+typedef struct s_shell
+{
+    int type;
+    t_cmd *tree;
+    t_var *var;
+    t_env *env;
+}   t_shell;
 
 typedef struct s_execcmd
 {
@@ -186,7 +207,6 @@ t_cmd *redircmd_out(t_cmd *cmd, char *file, char *efile, int fd)
 t_cmd *redircmd_append(t_cmd *cmd, char *file, char *efile, int fd)
 {
     t_redircmd *redir;
-    printf("ON APPEND\n\n");
     redir = malloc(sizeof(*redir));
     ft_memset(redir, 0, sizeof(*redir));
     redir->type = REDIR;
@@ -263,15 +283,15 @@ t_cmd *parseredirs(t_cmd *cmd, char **ps, char *es)
         token = gettoken(ps, es, &ptr_file, &ptr_endfile);
         if(gettoken(ps, es, &ptr_file, &ptr_endfile) != 'a')
             problem("missing file for redirection");
-        printf("TOKEN EST : %c\n", token);
-        printf("cmd est : %s\n", ((t_execcmd *)cmd)->args[0]);
-        printf("file est : %s\n", ptr_file);
+ 
         if(token == '>')
             cmd = redircmd_out(cmd, ptr_file, ptr_endfile, 0);
         else if(token == '<')  // Maybe pour le + faire un autre redir et le < mettre O_WRONLY|O_CREAT|O_TRUNC
             cmd = redircmd_in(cmd, ptr_file, ptr_endfile, 1);
         else if(token == '+')
             cmd = redircmd_append(cmd, ptr_file, ptr_endfile, 1);
+        else if(token == 'h')
+            printf("NEED TO IMPLEMENT HERE DOC\n");
         else
             problem("this aint a redirection");
         break;
@@ -284,7 +304,7 @@ int gettoken(char **ptr, char *end, char **ptr_token, char **ptr_endtoken)
 {
     char *temp;
     int check;
-
+    
     temp = *ptr;
     while(temp < end && ft_strchr(" \t\n\r\v", *temp))
         temp++;
@@ -294,17 +314,26 @@ int gettoken(char **ptr, char *end, char **ptr_token, char **ptr_endtoken)
     if(check == '<' || check == '(' || check == ')' || check == '|' || check == '&' || check == '>')
     {    
         temp++;
-        
-        if(*temp == '|')
+        if(*temp == '|' && *temp - 1 == '|')
         {
             temp++;
             check = 'o';
         }
-        if(check == '&')
+        if(check == '&' && *temp == '&')
         {
             temp++;
             check = 'a';
         }
+        if(*temp == '>' && *temp -1 == '>') /// append
+        {
+            temp++;
+            check = '+';
+        }
+        if(*temp == '<' && *temp -1 == '<') /// heredoc
+        {
+            temp++;
+            check = 'h';
+        } 
     }
     else
     {
@@ -315,11 +344,6 @@ int gettoken(char **ptr, char *end, char **ptr_token, char **ptr_endtoken)
         while(temp < end && !ft_strchr(" \t\n\r\v<>()|&", *temp))
             temp++;
     }
-    if(*temp == '>')
-    {
-        temp++;
-        check = '+';
-    } 
     if(ptr_endtoken)
         *ptr_endtoken = temp;
     *ptr = temp;
@@ -334,14 +358,10 @@ void problem(char *s)
 t_cmd *parseblock(char **ps, char *es)
 {
     t_cmd *cmd;
-    // printf("je suis ici\n");
     if(!lfsymbol(ps, es, "("))
         problem("this aint my block, oopy wrong hood?!?");
     gettoken(ps, es, 0, 0);
-    // printf("je suis a %s\n", *ps);
     cmd = parseline(ps, es);
-    // if(!lfsymbol(ps, es, ")"))
-    //     problem("Missing ) block aint closed");
     gettoken(ps, es, 0, 0);
     cmd = parseredirs(cmd, ps, es);
     return (cmd);
@@ -381,12 +401,6 @@ t_cmd *parseexec(char **ps, char *es)
     ret = parseredirs(ret, ps, es); // parse redirections
     cmd->args[argc] = 0; // set the last argument to 0
     cmd->eargs[argc] = 0; // set the end of the last argument to 0
-    // int x = 0;
-    // while(x <= argc)
-    // {
-    //     printf("Je sors ici et dans cmd->args il y a : %s\n", cmd->args[x]);
-    //     x++;
-    // }
     return (ret);
 }    
 
@@ -398,21 +412,17 @@ t_cmd *parsepipe(char **ptr, char *end)
     cmd = parseexec(ptr, end);
     while(*ptr < end)
     {
-        printf("Je suis dans parsepipe\n");
         if (lfsymbol(ptr, end, "|"))
         {
-            if(gettoken(ptr, end, 0, 0) == 'o'){printf("JE RENTRE ICI ||\n");
-                cmd = orcmd(cmd, parsepipe(ptr, end));}
+            if(gettoken(ptr, end, 0, 0) == 'o')
+                cmd = orcmd(cmd, parsepipe(ptr, end));
             else
                 cmd = pipecmd(cmd, parsepipe(ptr, end));
         }
         else if (lfsymbol(ptr, end, "&"))
         {
-            printf("JE RENTRE ICI\n");
             gettoken(ptr, end, 0, 0);
-            printf("Avant de renter dans andcmd le type est : %d\n", cmd->type);
             cmd = andcmd(cmd, parsepipe(ptr, end));
-            printf("En sortant apres le andcmd le type est : %d\n", cmd->type);
         }
         else
             break;
@@ -515,6 +525,8 @@ int checkblock(char *str)
     j = 0;
     while(str[i])
     {
+        if(str[i] == '(' && str[i + 1] == ')')
+            return (0);
         if(str[i] == '(')
             j++;
         if(str[i] == ')')
@@ -688,8 +700,8 @@ void printer(t_cmd *cmd, int s, int level) {
         printf("args[0] : %s\n", ex->args[0]);
     } 
 }
-// int main(int ac, char **av)
-// {
-//     printer(parsecmd(av[1]), 0, 0);
-//     // parsecmd(av[1]);
-// }
+int main(int ac, char **av)
+{
+    printer(parsecmd(av[1]), 0, 0);
+    // parsecmd(av[1]);
+}
