@@ -67,6 +67,15 @@ typedef struct s_shell
     t_env *env;
 }   t_shell;
 
+// typedef struct s_execcmd
+// {
+//     int type;
+//     int quoted; // 0 = no, 1 = simple, 2 = double
+//     int space;
+//     char *arg;
+//     struct s_execcmd *next;
+// }   t_execcmd;
+
 typedef struct s_execcmd
 {
     int type;
@@ -133,7 +142,7 @@ t_cmd *parse_or(char **ptr, char *end);
 void nulterminator(t_cmd *cmd);
 void nulargs(t_cmd *cmd);
 void nulredir(t_cmd *cmd);
-void ft_memset(void *s, int c, size_t n);
+void ft_bzero(void *s, size_t n);
 int ft_strlen(const char *s);
 char *ft_strchr(char *s, char c);
 int lfsymbol(char **ptr, char *end, char *c);
@@ -232,13 +241,13 @@ char *ft_strchr(char *s, char c)
     return (0);
 }
 
-void ft_memset(void *s, int c, size_t n)
+void ft_bzero(void *s, size_t n)
 {
     unsigned char *p;
 
     p = s;
     while(n--)
-        *p++ = (unsigned char)c;
+        *p++ = 0;
 }
 
 int ft_strlen(const char *s)
@@ -374,7 +383,7 @@ t_cmd *redircmd_in(t_cmd *cmd, char *file, char *efile, int fd)
     t_redircmd *redir;
 
     redir = malloc(sizeof(*redir));
-    ft_memset(redir, 0, sizeof(*redir));
+    ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->cmd = cmd;
     redir->file = file;
@@ -389,7 +398,7 @@ t_cmd *redircmd_out(t_cmd *cmd, char *file, char *efile, int fd)
     t_redircmd *redir;
 
     redir = malloc(sizeof(*redir));
-    ft_memset(redir, 0, sizeof(*redir));
+    ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->cmd = cmd;
     redir->file = file;
@@ -403,7 +412,7 @@ t_cmd *redircmd_append(t_cmd *cmd, char *file, char *efile, int fd)
 {
     t_redircmd *redir;
     redir = malloc(sizeof(*redir));
-    ft_memset(redir, 0, sizeof(*redir));
+    ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->cmd = cmd;
     redir->file = file;
@@ -418,7 +427,7 @@ t_cmd *redircmd_in2(t_cmd *cmd, char *file, char *efile, int fd)
     t_redircmd *redir;
 
     redir = malloc(sizeof(*redir));
-    ft_memset(redir, 0, sizeof(*redir));
+    ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->file = file;
     redir->efile = efile;
@@ -436,7 +445,7 @@ t_cmd *redircmd_out2(t_cmd *cmd, char *file, char *efile, int fd)
 
     temp = (t_redircmd *)((t_redircmd *)cmd)->cmd;
     redir = malloc(sizeof(*redir));
-    ft_memset(redir, 0, sizeof(*redir));
+    ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->file = file;
     redir->efile = efile;
@@ -454,7 +463,7 @@ t_cmd *redircmd_append2(t_cmd *cmd, char *file, char *efile, int fd)
 
     temp = (t_redircmd *)((t_redircmd *)cmd)->cmd;
     redir = malloc(sizeof(*redir));
-    ft_memset(redir, 0, sizeof(*redir));
+    ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->file = file;
     redir->efile = efile;
@@ -465,12 +474,21 @@ t_cmd *redircmd_append2(t_cmd *cmd, char *file, char *efile, int fd)
     return((t_cmd *)redir);
 }
 
+/*typedef struct s_execcmd
+{
+    int type;
+    int quoted; // 0 = no, 1 = simple, 2 = double
+    int space;
+    char *arg;
+    struct s_execcmd *next;
+}   t_execcmd;*/
+
 t_cmd *execcmd(void)
 {
     t_execcmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
-    ft_memset(cmd, 0, sizeof(*cmd));
+    ft_bzero(cmd, sizeof(*cmd));
     cmd->type = EXEC;
     return ((t_cmd *)cmd);
 };
@@ -480,7 +498,7 @@ t_cmd *pipecmd(t_cmd *left, t_cmd *right)
     t_pipecmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
-    ft_memset(cmd, 0, sizeof(*cmd));
+    ft_bzero(cmd, sizeof(*cmd));
     cmd->type = PIPE;
     cmd->left = left;
     cmd->right = right;
@@ -493,7 +511,7 @@ t_cmd *andcmd(t_cmd *left, t_cmd *right)
     t_andcmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
-    ft_memset(cmd, 0, sizeof(*cmd));
+    ft_bzero(cmd, sizeof(*cmd));
     cmd->type = AND;
     cmd->left = left;
     cmd->right = right;
@@ -505,7 +523,7 @@ t_cmd *orcmd(t_cmd *left, t_cmd *right)
     t_orcmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
-    ft_memset(cmd, 0, sizeof(*cmd));
+    ft_bzero(cmd, sizeof(*cmd));
     cmd->type = OR;
     cmd->left = left;
     cmd->right = right;
@@ -627,23 +645,23 @@ void    extratoken(char **temp, int *check)
             *check = 'h';
         }
 }
-void quote_ptr(char **temp, int *check, char *end)
-{
-    int quote;
-    int nbr;
+// void quote_ptr(char **temp, int *check, char *end)
+// {
+//     int quote;
+//     int nbr;
 
-    quote = *check;
-    nbr = 1;
-    (*temp)++;
-    while((*temp) < end  && nbr != 0)
-    {
-        if(*(*temp) == quote)
-            nbr--;
-        (*temp)++;
-    }
+//     quote = *check;
+//     nbr = 1;
+//     (*temp)++;
+//     while((*temp) < end  && nbr != 0)
+//     {
+//         if(*(*temp) == quote)
+//             nbr--;
+//         (*temp)++;
+//     }
 
-    *check = 'a';
-}
+//     *check = 'a';
+// }
 int gettoken(char **ptr, char *end, char **ptr_token, char **ptr_endtoken)
 {
     char *temp;
@@ -662,12 +680,12 @@ int gettoken(char **ptr, char *end, char **ptr_token, char **ptr_endtoken)
             extratoken(&temp, &check); // Checking for ||, &&, >>, <<
     }
     else
-    {
-        if(check == '\'' || check == '\"')
-            quote_ptr(&temp, &check, end);
-        else 
+    // {
+    //     if(check == '\'' || check == '\"')
+    //         quote_ptr(&temp, &check, end);
+    //     else 
             other_token(&temp, &check, end); // \0 or words
-    }
+    // }
     if(ptr_endtoken)
         *ptr_endtoken = temp;
     *ptr = temp;
@@ -770,45 +788,6 @@ t_cmd *parseexec(char **ps, char *es)
     cmd->eargs[argc] = 0;
     return (ret);
 }
-// t_cmd *parseexec(char **ps, char *es)
-// {
-//     char *ptr_arg;
-//     char *ptr_earg;    // q: start of token, eq: end of token
-//     int token;
-//     int argc;    // tok: token type, argc: argument count
-//     t_execcmd *cmd;   // cmd: command
-//     t_cmd *ret;       // ret: return value
-
-//     if(lfsymbol(ps, es, "("))     // if the next token is '('
-//         return (parseblock(ps, es));   // calls parseblock and returns the cmd        
-//     ret = execcmd();  // creates a new command
-//     cmd = (t_execcmd *)ret;                // cast the command to execcmd
-//     argc = 0;               // initialize argument count
-//     ret = parseredirs(ret, ps, es); // parse redirections
-//     while(!lfsymbol(ps, es, "|)<>&"))// while the next token is not a pipe, background, or semicolon
-//     {
-//         if((token = gettoken(ps, es, &ptr_arg, &ptr_earg)) == 0)
-//             break;
-//         printf("ps: %s \t Token : %c\n", *ps, token);
-//         if(!token)
-//             break; // if the token is 0, break
-//         if(token == 'a') // if the token is not an argument
-//     {
-//         cmd->args[argc] = ptr_arg; // sets the argument
-//         cmd->eargs[argc] = ptr_earg; // sets the end of the argument
-//         argc++; // increment the argument count
-//         if(argc >= MAXARGS) // if the argument count is greater than or equal to the maximum number of arguments
-//             problem("too many args"); // problem
-//     }
-//         else
-//             problem("syntax"); // pb 
-//         ret = parseredirs(ret, ps, es); // parse redirections
-//     }
-//     ret = parseredirs(ret, ps, es); // parse redirections
-//     cmd->args[argc] = 0; // set the last argument to 0
-//     cmd->eargs[argc] = 0; // set the end of the last argument to 0
-//     return (ret);
-// }    
 
 t_cmd *parse_double_node(char **ptr, char *end)
 {
