@@ -1262,12 +1262,163 @@ void ft_exec(t_cmd *tree, char **env)
 
     return ;
 }
+
+typedef struct s_lexer
+{
+    int type;
+    struct s_lexer *next;
+    struct s_lexer *prev;
+}   t_lexer;
+
+
+// echo a > b && echo b > c || ()
+// WORD > >> < << | && || ( ) \0
+
+
+// TOKEN	VALUE	BEFORE	                        AFTER
+// \0	    0	    ) WORD 	                        Nothing
+// WORD	    1	    > >> && || |  << < ( START	    > >> && || | EOF  << < WORD )
+// <	    2	    && || |  ( START	            WORD 
+// <<	    2	    && || |  ( START	            WORD 
+// >	    3	    && || |  ( ) START	            WORD 
+// >>	    3	    && || |  ( ) START	            WORD 
+// AND / OR 4	    ) WORD	                        ( WORD < << > >> 
+// PIPE	    5	    ) WORD 	                        WORD () && || > >> < <<
+
+
+/*
+    (echo o) echo b
+    bash: syntax error near unexpected token `echo'
+*/
+t_lexer	*ft_lstlast(t_lexer *lst)
+{
+	if (!lst)
+		return (0);
+	while (lst->next != 0)
+		lst = lst->next;
+	return (lst);
+}
+
+void	ft_lstadd_back(t_lexer **lst, t_lexer **new)
+{
+	t_lexer	*temp;
+
+	if (lst == NULL || new == NULL)
+		return ;
+	if (*lst == NULL){printf("je rentre ici\n");
+		*lst = (*new);}
+	else
+	{
+		temp = *lst;
+		temp = ft_lstlast(temp);
+        temp->next = (*new);
+        (*new)->prev = temp;
+
+	}
+}
+
+int add_lex_node(t_lexer **lex, char *str, int *i)
+{
+    t_lexer *new;
+    new = malloc(sizeof(*new));
+    if(!new)
+        return (1);
+    while(str[*i] && !ft_strchr(" \t\n\r\v><|&()", str[*i]))
+        (*i)++;
+    new->type = 0;
+    new->next = NULL;
+    ft_lstadd_back(lex, &new);
+    return 0;
+}
+
+int sub_lexer(t_lexer **lex, char *str, int *i)
+{
+    t_lexer *new;
+    new = malloc(sizeof(*new));
+    if(!new)
+        return (1);
+    if(str[*i] == '>')
+    {
+        new->type = 3;
+        if(str[*i + 1] == '>')
+            (*i)++;
+    }
+    else if(str[*i] == '<')
+    {
+        new->type = 2;
+        if(str[*i + 1] == '<') // Faudra lancer le heredoc ici
+            (*i)++;
+    }
+    else if (str[*i] == '(')
+        new->type = 7;
+    else if (str[*i] == ')')
+        new->type = 8;
+    else if (str[*i] == '&')
+    {
+        new->type = 4;
+        if (str[*i + 1] == '&')
+            (*i)++;
+        else
+            return (1);
+    }
+    else if (str[*i] == '|')
+    {
+        new->type = 5;
+        if(str[*i + 1] == '|')
+        {
+            new->type = 4;
+            (*i)++;
+        }
+    }
+    (*i)++;
+    new->next = NULL;
+    ft_lstadd_back(lex, &new);
+    return 0;
+}
+
+void lexing_check(t_lexer *lex)
+{
+
+
+
+}
+void *lexer(char *str)
+{
+    int i;
+    t_lexer *lexer;
+    
+    i = 0;
+    while(str[i])
+    {
+        while(ft_strchr(" \t\n\r\v", str[i]))
+            i++;
+        if(str[i] && ft_strchr("><|&()", str[i]))
+        {
+            if(sub_lexer(&lexer, str, &i))
+                return (NULL); // faut free le lexer
+            continue;
+        }
+        if(str[i] && !ft_strchr(" \t\n\r\v", str[i]))
+            if(add_lex_node(&lexer, str, &i) == 1)
+                return (NULL);// faut free le lexer
+    }
+    return lexer;
+}
+
 int main(int ac, char **av, char **env)
 {
     // char *buf = readline("Gimme something > ");
     t_cmd *tree;
-    tree = parsecmd(av[1]);
-    printer(tree, 0, 0);
+    t_lexer *lex;
+    lex = lexer(av[1]);
+    while(lex)
+    {
+        printf("type : %d\n", lex->type);
+        lex = lex->next;
+    }
+    // tree = parsecmd(av[1]);
+    // printer(tree, 0, 0);
     // ft_exec(tree, env);
+
     tree_free(&tree);
 }
