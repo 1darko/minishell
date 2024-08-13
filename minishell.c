@@ -126,14 +126,14 @@ typedef struct s_herecmd
 {
     int type;
     t_cmd *cmd;
-    char *here;
-    char *ehere;
+    int id;
 }   t_herecmd;
 
 typedef struct s_herepipe
 {
     int fd;
     int empty;
+    int id;
     struct s_herepipe *next;
 } t_herepipe;
 
@@ -163,6 +163,7 @@ t_cmd *parsecmd(char *str);
 t_cmd *parse_all_redirections(t_cmd *cmd, char **ps, char *es);
 int parse_single_argument(t_execcmd *cmd, char **ps, char *es, int argc);
 void initialize_cmd(t_cmd **ret, t_execcmd **cmd, int *argc);
+int lexer(char *str);
 
 // Pipex 
 void ft_exec(t_cmd *tree, char **env);
@@ -613,14 +614,20 @@ void    parseredirs_primo(t_cmd **cmd, char **ps, char *es, int *check)
     else
         parseredirs_er(temp, ps, es);
 }
-void    other_token(char **temp, int *check, char *end)
+void    other_token(char **temp, int *check, char *end, char quotes)
 {
     if(*(*temp) == '\0')
         *check = 0;
     else
         *check = 'a';
-    while((*temp) < end && !ft_strchr(" \t\n\r\v<>()|&", *(*temp)))
-        (*temp)++;
+    if(quotes == '\'' || quotes == '\"')
+    {
+        while((*temp) < end && !ft_strchr(&quotes, *(*temp)))
+            (*temp)++;
+    }
+    else
+        while((*temp) < end && !ft_strchr(" \t\n\r\v<>()|&", *(*temp)))
+            (*temp)++;
 }
 void    extratoken(char **temp, int *check)
 {
@@ -680,12 +687,7 @@ int gettoken(char **ptr, char *end, char **ptr_token, char **ptr_endtoken)
             extratoken(&temp, &check); // Checking for ||, &&, >>, <<
     }
     else
-    // {
-    //     if(check == '\'' || check == '\"')
-    //         quote_ptr(&temp, &check, end);
-    //     else 
-            other_token(&temp, &check, end); // \0 or words
-    // }
+        other_token(&temp, &check, end, *temp); // \0 or words
     if(ptr_endtoken)
         *ptr_endtoken = temp;
     *ptr = temp;
@@ -773,7 +775,7 @@ t_cmd *parseexec(char **ps, char *es)
     initialize_cmd(&ret, &cmd, &argc);
     parseredirs_primo(&ret, ps, es, &check);
     //fd 
-    while (!lfsymbol(ps, es, "|)<>&")) 
+    while (!lfsymbol(ps, es, "|)<>&\0")) 
     {
         
         if (!parse_single_argument(cmd, ps, es, argc))
@@ -924,9 +926,11 @@ int checkblock(const char *str)
         if(str[i] == ')')
             j--;
         if(j < 0)
-            return (1);   
+            return (printf("Minishell:syntax error near unexpected token`)\'\n"), 1);   
         i++;
     }
+    if(j > 0)
+        printf("Minishell: syntax error near unexpected token`(\'\n");
     if(j != 0)
         return (1);
     return (0);
@@ -974,8 +978,10 @@ t_cmd *parsecmd(char *str)
     t_cmd *cmdtree;
     char *end;
 
+    if(lexer(str))
+        return (free(str), NULL);
     if(checkblock(str)) // parse des () pour eviter de free apres tout l'arbre une fois parseline lance
-        problem("syntax errorRRRRRRRrr"); // Need to free STR
+        return (free(str), NULL); // Need to free STR
     end = str + ft_strlen(str);
     cmdtree = parseline(&str, end);
     // A enlever a la fin FPRINTF pour debug
@@ -1101,6 +1107,18 @@ void printer(t_cmd *cmd, int s, int level) {
     }
 }
 
+void free_args(t_execcmd *ex)
+{
+    int i;
+
+    i = 0;
+    while(ex->args[i])
+    {
+        free(ex->args[i]);
+        i++;
+    }
+}
+
 void tree_free(t_cmd **tree)
 {
     t_execcmd *ex;
@@ -1113,14 +1131,17 @@ void tree_free(t_cmd **tree)
     {
         re = (t_redircmd *)(*tree);
         if(re->cmd->type == EXEC)
+        {   
             free(re->cmd);
+        }
         else
             tree_free(&re->cmd);
         free(re);
     }
     else if ((*tree)->type == EXEC)
-    {
+    {   
         ex = (t_execcmd *)(*tree);
+        free_args(ex);
         free(ex);
     }
     else
@@ -1311,6 +1332,7 @@ void	ft_lstadd_back(t_lexer **lst, t_lexer **new)
 	if (lst == NULL || new == NULL)
 		return ;
 	if (*lst == NULL)
+    
 		*lst = (*new);
 	else
 	{
@@ -1337,6 +1359,7 @@ int add_lex_node(t_lexer **lex, char *str, int *i)
 
     new->type = 1;
     new->next = NULL;
+    new->prev = NULL;
 
     ft_lstadd_back(lex, &new);
 
@@ -1387,6 +1410,7 @@ int sub_lexer(t_lexer **lex, char *str, int *i)
     }
     (*i)++;
     new->next = NULL;
+    new->prev = NULL;
     ft_lstadd_back(lex, &new);
     return 0;
 }
@@ -1396,6 +1420,8 @@ int prev_check(t_lexer *lex, char *str)
     int i;
 
     i = 0;
+    if(!lex)
+        return (1);
     while(str[i])
     {   
         if(lex->prev == 0)
@@ -1409,8 +1435,6 @@ int prev_check(t_lexer *lex, char *str)
             return (0);
         i++;
     }
-
-    printf("je rentre ici\n");
     return (1);
 }
 int next_check(t_lexer *lex, char *str)
@@ -1435,78 +1459,149 @@ int next_check(t_lexer *lex, char *str)
 }
 // Need to check RULES for REDIR 2-3
 
-void lexing_check(t_lexer *lexer)
+typedef enum e_lex
+{
+    lstart = 0,
+    lend = 1,
+    lword = 2,
+    llt = 6,
+    lgt = 14,
+    land = 30,
+    lpipe = 62,
+    lop = 126,
+    lcp = 254,
+    lor = 510,
+    lheredoc = 1022
+
+}   t_lex;
+
+int lexing_check(t_lexer *lexer)
+{
+    t_lexer *lex;
+    
+    int i;
+
+    i = 0;
+    lex = lexer;
+    while(lex)
+    {
+        if(lex->type == 1)
+        { // WORD 
+            if(prev_check(lex, "-12345689"))
+            // if(prev_check(lex, "-12345689") || next_check(lex, "123457890"))
+            {
+                printf("Lexer : sytax error\n");
+                return (1);
+            }
+        }
+        else if(lex->type == 2) // <
+        {
+            if(prev_check(lex, "-145678"))
+            // if(prev_check(lex, "-145678") || next_check(lex, "19"))
+            {
+                printf("Minishell: syntax error near unexpected token `newline'\n");
+                return (1);
+            }    
+        }
+        else if(lex->type == 3) // > >>
+        {
+            if(prev_check(lex, "-145678"))
+            // if(prev_check(lex, "-145678") || next_check(lex, "19"))
+            {
+                printf("Minishell: syntax error near unexpected token `newline'\n");
+                return (1);
+            }
+        }
+        else if(lex->type == 4) // AND
+        {
+            if(prev_check(lex, "17"))
+            // if(prev_check(lex, "17") || next_check(lex, "12369"))
+            {
+                printf("Minishell: syntax error near unexpected token `&&\'\n");
+                return (1);
+            }    
+        }
+        else if(lex->type == 5) // PIPE
+        {
+            if(prev_check(lex, "179"))
+            // if(prev_check(lex, "179") || next_check(lex, "12369"))
+            {
+                printf("Minishell: syntax error near unexpected token `|\'\n");
+                return (1);
+            }
+        }
+        else if(lex->type == 6 && ++i)
+        {
+         // (
+            if(prev_check(lex, "-45680"))
+            // if(prev_check(lex, "-45680") || next_check(lex, "12369"))
+            {
+                printf("Minishell: syntax error near unexpected token `(\'\n");
+                return (1);
+        }
+            }
+        else if(lex->type == 7 && i-- >= -1) // )
+        {
+            if(prev_check(lex, "17"))
+            // if(prev_check(lex, "17") || next_check(lex, "2345789"))
+            {
+                printf("Minishell: syntax error near unexpected token `)\'\n");
+                return (1);
+            }
+        }
+        else if(lex->type == 8) // OR
+        {
+            if(prev_check(lex, "17"))
+            // if(prev_check(lex, "17") || next_check(lex, "12369"))
+            {
+                printf("Minishell: syntax error near unexpected token ||\n");
+                return (1);
+            }
+        }
+        else if(lex->type == 9) // <<
+        {
+            // Needs to lunch HEREDOC here
+            if(prev_check(lex, "-145678")) // pas sur la?????
+            // if(prev_check(lex, "-145678") || next_check(lex, "1")) // pas sur la?????
+            {
+                printf("Minishell: syntax error near unexpected token `<<\'\n");
+                return (1);
+            }    
+        }
+        lex = lex->next;
+        if(i < 0)
+        {
+            printf("Minishell: syntax error near unexpected token `)\'\n");
+            return (1);
+        }
+    }
+    if(i)
+    {
+        printf("Minishell: syntax error near unexpected token `(\'\n");
+        return (1);
+    }
+    // if(next_check(ft_lstlast(lexer)->prev, "12379"))
+    // {
+    //     printf("Minishell: syntax error near unexpected token `newline\'\n");
+    //     return (1);
+    // }
+
+    return (0);
+}
+void free_lexer(t_lexer *lexer)
 {
     t_lexer *lex;
 
     lex = lexer;
-    while(lex)
+    while(lexer)
     {
-        if(lex->type == 1) // WORD 
-            if(prev_check(lex, "-12345689") || next_check(lex, "012345789"))
-            {
-                printf("Prev_check : %d\n", prev_check(lex, "-12345689"));
-                printf("Next_check : %d\n", next_check(lex, "012345789"));
-                printf("syntax errorRRRRRRRRRRRrr\n");
-                exit (1);
-            }
-        if(lex->type == 2) // <
-            if(prev_check(lex, "-18654") || next_check(lex, "0123458"))
-            {
-                printf("Minishell parse error near `\\n\'\n");
-                exit (1);
-            }    
-        if(lex->type == 3) // > >>
-            if(prev_check(lex, "-1234568") || next_check(lex, "14568"))
-            {
-                printf("Minishell parse error near `\\n\'\n");
-                exit (1);
-            }
-        if(lex->type == 4) // AND
-            if(prev_check(lex, "17") || next_check(lex, "12356"))
-            {
-                printf("Minishell parse error near &&\n");
-                exit (1);
-            }    
-        if(lex->type == 5) // PIPE
-            if(prev_check(lex, "157") || next_check(lex, "123458"))
-            {
-                printf("Minishell : parse error near `|\'\n");
-                exit (1);
-            }
-        if(lex->type == 6) // (
-            if(prev_check(lex, "04568") || next_check(lex, "123"))
-            {
-                printf("ca bug dans redir\n");
-                exit (1);
-            }
-        if(lex->type == 7) // )
-            if(prev_check(lex, "17") || next_check(lex, "3408"))
-            {
-                printf("Minishell : parse error near `)\'\n");
-                exit (1);
-            }
-        if(lex->type == 8) // OR
-            if(prev_check(lex, "17") || next_check(lex, "12356"))
-            {
-                printf("Minishell parse error near ||\n");
-                exit (1);
-            }
-        if(lex->type == 9) // <<
-        {
-            // Needs to lunch HEREDOC here
-            if(prev_check(lex, "-") || next_check(lex, "123458")) // pas sur la?????
-            {
-                printf("Minishell parse error near `\\n\'\n");
-                exit (1);
-            }    
-        }
-        lex = lex->next;
+        lex = lexer->next;
+        free(lexer);
+        lexer = lex;
     }
-
-
 }
-void *lexer(char *str)
+
+int lexer(char *str)
 {
     int i;
     t_lexer *lexer;
@@ -1520,30 +1615,33 @@ void *lexer(char *str)
         if(str[i] && ft_strchr("><|&()", str[i]))
         {
             if(sub_lexer(&lexer, str, &i))
-                return (NULL); // faut free le lexer
+                return (free_lexer(lexer), 1); // faut free le lexer
             continue;
         }
         if(str[i] && !ft_strchr(" \t\n\r\v", str[i]))
             if(add_lex_node(&lexer, str, &i) == 1)
-                return (NULL);// faut free le lexer
+                return (free_lexer(lexer), 1);// faut free le lexer
     }
-    t_lexer *lex = lexer;
-    while(lexer)
-        lexer = lexer->next;
-    lexer = lex;
-    lexing_check(lexer);
-    return (lexer);
+    if(lexing_check(lexer))
+        return (free_lexer(lexer), 1);
+    return (free_lexer(lexer),0);
 }
 
 int main(int ac, char **av, char **env)
 {
     t_cmd *tree;
     t_lexer *lex;
+    char *copy;
 
-    lex = lexer(av[1]);
-    tree = parsecmd(av[1]);
-    printer(tree, 0, 0);
+    copy = strdup(av[1]);
+    tree = parsecmd(copy);
+    if(tree)
+    {
+        printer(tree, 0, 0);
+        tree_free(&tree);
+        free(copy);
+        return (0);
+    }
     // ft_exec(tree, env);
-
-    tree_free(&tree);
+    return (1);
 }
