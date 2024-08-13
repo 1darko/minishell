@@ -906,27 +906,32 @@ void nulterminator(t_cmd *cmd)
 }
 
 // Global return should be 2 when exiting program if it fails
-int checkblock(char *str)
+int checkblock(const char *str)
 {
     int i;
     int j;
 
     i = 0;
     j = 0;
-    while(str[i])
+    if(!str)
+        return (0);
+    while(str[i] != '\0')
     {
         if(str[i] == '(' && str[i + 1] == ')')
-            return (0);
+            return (1);
         if(str[i] == '(')
             j++;
         if(str[i] == ')')
             j--;
         if(j < 0)
-            return (0);   
+            return (1);   
         i++;
     }
-    return (j == 0);
+    if(j != 0)
+        return (1);
+    return (0);
 }
+
 void emptyswitch(t_cmd *cmd)
 {
     t_execcmd *ex;
@@ -969,8 +974,8 @@ t_cmd *parsecmd(char *str)
     t_cmd *cmdtree;
     char *end;
 
-    if(!checkblock(str)) // parse des () pour eviter de free apres tout l'arbre une fois parseline lance
-        problem("syntax error");
+    if(checkblock(str)) // parse des () pour eviter de free apres tout l'arbre une fois parseline lance
+        problem("syntax errorRRRRRRRrr"); // Need to free STR
     end = str + ft_strlen(str);
     cmdtree = parseline(&str, end);
     // A enlever a la fin FPRINTF pour debug
@@ -1305,12 +1310,14 @@ void	ft_lstadd_back(t_lexer **lst, t_lexer **new)
 
 	if (lst == NULL || new == NULL)
 		return ;
-	if (*lst == NULL){printf("je rentre ici\n");
-		*lst = (*new);}
+	if (*lst == NULL)
+		*lst = (*new);
 	else
 	{
+
 		temp = *lst;
 		temp = ft_lstlast(temp);
+        
         temp->next = (*new);
         (*new)->prev = temp;
 
@@ -1319,15 +1326,20 @@ void	ft_lstadd_back(t_lexer **lst, t_lexer **new)
 
 int add_lex_node(t_lexer **lex, char *str, int *i)
 {
+
     t_lexer *new;
     new = malloc(sizeof(*new));
     if(!new)
         return (1);
+
     while(str[*i] && !ft_strchr(" \t\n\r\v><|&()", str[*i]))
         (*i)++;
-    new->type = 0;
+
+    new->type = 1;
     new->next = NULL;
+
     ft_lstadd_back(lex, &new);
+
     return 0;
 }
 
@@ -1347,12 +1359,15 @@ int sub_lexer(t_lexer **lex, char *str, int *i)
     {
         new->type = 2;
         if(str[*i + 1] == '<') // Faudra lancer le heredoc ici
+        {
+            new->type = 9;
             (*i)++;
+        }
     }
     else if (str[*i] == '(')
-        new->type = 7;
+        new->type = 6;
     else if (str[*i] == ')')
-        new->type = 8;
+        new->type = 7;
     else if (str[*i] == '&')
     {
         new->type = 4;
@@ -1366,7 +1381,7 @@ int sub_lexer(t_lexer **lex, char *str, int *i)
         new->type = 5;
         if(str[*i + 1] == '|')
         {
-            new->type = 4;
+            new->type = 8;
             (*i)++;
         }
     }
@@ -1376,9 +1391,118 @@ int sub_lexer(t_lexer **lex, char *str, int *i)
     return 0;
 }
 
-void lexing_check(t_lexer *lex)
+int prev_check(t_lexer *lex, char *str)
 {
+    int i;
 
+    i = 0;
+    while(str[i])
+    {   
+        if(lex->prev == 0)
+        {
+            if(str[i] == '-')
+                return (0);
+            else
+                return (1);
+        }
+        if((lex->prev->type + 48) == str[i])
+            return (0);
+        i++;
+    }
+
+    printf("je rentre ici\n");
+    return (1);
+}
+int next_check(t_lexer *lex, char *str)
+{
+    int i;
+
+    i = 0;
+    while(str[i])
+    {
+        if(lex->next == 0)
+        {
+            if(str[i] == '0')
+                return (0);
+            else
+                return (1);
+        }
+        if((lex->next->type + 48) == str[i])
+            return (0);
+        i++;
+    }
+    return (1);
+}
+// Need to check RULES for REDIR 2-3
+
+void lexing_check(t_lexer *lexer)
+{
+    t_lexer *lex;
+
+    lex = lexer;
+    while(lex)
+    {
+        if(lex->type == 1) // WORD 
+            if(prev_check(lex, "-12345689") || next_check(lex, "012345789"))
+            {
+                printf("Prev_check : %d\n", prev_check(lex, "-12345689"));
+                printf("Next_check : %d\n", next_check(lex, "012345789"));
+                printf("syntax errorRRRRRRRRRRRrr\n");
+                exit (1);
+            }
+        if(lex->type == 2) // <
+            if(prev_check(lex, "-18654") || next_check(lex, "0123458"))
+            {
+                printf("Minishell parse error near `\\n\'\n");
+                exit (1);
+            }    
+        if(lex->type == 3) // > >>
+            if(prev_check(lex, "-1234568") || next_check(lex, "14568"))
+            {
+                printf("Minishell parse error near `\\n\'\n");
+                exit (1);
+            }
+        if(lex->type == 4) // AND
+            if(prev_check(lex, "17") || next_check(lex, "12356"))
+            {
+                printf("Minishell parse error near &&\n");
+                exit (1);
+            }    
+        if(lex->type == 5) // PIPE
+            if(prev_check(lex, "157") || next_check(lex, "123458"))
+            {
+                printf("Minishell : parse error near `|\'\n");
+                exit (1);
+            }
+        if(lex->type == 6) // (
+            if(prev_check(lex, "04568") || next_check(lex, "123"))
+            {
+                printf("ca bug dans redir\n");
+                exit (1);
+            }
+        if(lex->type == 7) // )
+            if(prev_check(lex, "17") || next_check(lex, "3408"))
+            {
+                printf("Minishell : parse error near `)\'\n");
+                exit (1);
+            }
+        if(lex->type == 8) // OR
+            if(prev_check(lex, "17") || next_check(lex, "12356"))
+            {
+                printf("Minishell parse error near ||\n");
+                exit (1);
+            }
+        if(lex->type == 9) // <<
+        {
+            // Needs to lunch HEREDOC here
+            if(prev_check(lex, "-") || next_check(lex, "123458")) // pas sur la?????
+            {
+                printf("Minishell parse error near `\\n\'\n");
+                exit (1);
+            }    
+        }
+        lex = lex->next;
+    }
 
 
 }
@@ -1387,6 +1511,7 @@ void *lexer(char *str)
     int i;
     t_lexer *lexer;
     
+    lexer = NULL;
     i = 0;
     while(str[i])
     {
@@ -1402,22 +1527,22 @@ void *lexer(char *str)
             if(add_lex_node(&lexer, str, &i) == 1)
                 return (NULL);// faut free le lexer
     }
-    return lexer;
+    t_lexer *lex = lexer;
+    while(lexer)
+        lexer = lexer->next;
+    lexer = lex;
+    lexing_check(lexer);
+    return (lexer);
 }
 
 int main(int ac, char **av, char **env)
 {
-    // char *buf = readline("Gimme something > ");
     t_cmd *tree;
     t_lexer *lex;
+
     lex = lexer(av[1]);
-    while(lex)
-    {
-        printf("type : %d\n", lex->type);
-        lex = lex->next;
-    }
-    // tree = parsecmd(av[1]);
-    // printer(tree, 0, 0);
+    tree = parsecmd(av[1]);
+    printer(tree, 0, 0);
     // ft_exec(tree, env);
 
     tree_free(&tree);
