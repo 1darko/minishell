@@ -49,7 +49,7 @@ typedef struct s_env
 typedef struct s_sub
 {
     int type;
-    t_cmd *sub;
+    t_cmd *cmd;
 }   t_sub;
 
 typedef struct s_var
@@ -137,6 +137,14 @@ typedef struct s_herepipe
     struct s_herepipe *next;
 } t_herepipe;
 
+typedef struct s_lexer
+{
+    int type;
+    struct s_lexer *next;
+    struct s_lexer *prev;
+}   t_lexer;
+
+
 t_cmd *parse_and(char **ptr, char *end);
 t_cmd *parse_or(char **ptr, char *end);
 void nulterminator(t_cmd *cmd);
@@ -164,7 +172,7 @@ t_cmd *parse_all_redirections(t_cmd *cmd, char **ps, char *es);
 int parse_single_argument(t_execcmd *cmd, char **ps, char *es, int argc);
 void initialize_cmd(t_cmd **ret, t_execcmd **cmd, int *argc);
 int lexer(char *str);
-
+void tree_free(t_cmd **tree);
 // Pipex 
 void ft_exec(t_cmd *tree, char **env);
 char	*get_path(char *cmd, char **env);
@@ -172,6 +180,9 @@ static char	*ft_strjoin(char const *s1, char const *s2);
 char	*get_env(char *name, char **env);
 static char	*ft_substr(char const *s, unsigned int start, size_t len);
 void	free_array(char **s);
+int sub_lexer(t_lexer **lex, char *str, int *i);
+void free_lexer(t_lexer *lexer);
+int lexing_check(t_lexer *lexer);
 
 void	free_array(char **s)
 {
@@ -536,7 +547,7 @@ t_cmd *parse_subshell(char **ps, char *es, int *check)
     t_sub *ret;
     ret = malloc(sizeof(*ret));
     ret->type = SUB;
-    ret->sub = parseblock(ps, es, check);
+    ret->cmd = parseblock(ps, es, check);
     return ((t_cmd *)ret);
 }
 // Parsing functions
@@ -614,16 +625,22 @@ void    parseredirs_primo(t_cmd **cmd, char **ps, char *es, int *check)
     else
         parseredirs_er(temp, ps, es);
 }
-void    other_token(char **temp, int *check, char *end, char quotes)
+void    other_token(char **temp, int *check, char *end)
 {
+    char a = *(*temp);
+    printf("a: %c\n", a);
     if(*(*temp) == '\0')
         *check = 0;
     else
         *check = 'a';
-    if(quotes == '\'' || quotes == '\"')
+    if(a == '\"' || a == '\'')
     {
-        while((*temp) < end && !ft_strchr(&quotes, *(*temp)))
+        (*temp)++;
+        while((*temp) < end && *(*temp) != a)
             (*temp)++;
+        (*temp)++;
+        if(**temp == '\'' || **temp == '\"')
+            other_token(temp, check, end);
     }
     else
         while((*temp) < end && !ft_strchr(" \t\n\r\v<>()|&", *(*temp)))
@@ -681,13 +698,13 @@ int gettoken(char **ptr, char *end, char **ptr_token, char **ptr_endtoken)
         *ptr_token = temp;
     check = *temp;
     if(ft_strchr("<>()|&", check))
-    {    
+    {        
         temp++;
         if(check == *temp && check != '(' && check != ')')
             extratoken(&temp, &check); // Checking for ||, &&, >>, <<
     }
     else
-        other_token(&temp, &check, end, *temp); // \0 or words
+        other_token(&temp, &check, end); // \0 or words
     if(ptr_endtoken)
         *ptr_endtoken = temp;
     *ptr = temp;
@@ -774,10 +791,9 @@ t_cmd *parseexec(char **ps, char *es)
     }
     initialize_cmd(&ret, &cmd, &argc);
     parseredirs_primo(&ret, ps, es, &check);
-    //fd 
+     
     while (!lfsymbol(ps, es, "|)<>&\0")) 
     {
-        
         if (!parse_single_argument(cmd, ps, es, argc))
             break;
         argc++;
@@ -864,7 +880,6 @@ void nulargs(t_cmd* cmd)
 
     while((exe->args[i]) != 0)
     {
-        printf("args[%d] : %s\n", i, exe->args[i]);
         *exe->eargs[i] = 0;
         i++;
     }
@@ -901,7 +916,7 @@ void nulterminator(t_cmd *cmd)
     }
     if(cmd->type == SUB)
     {
-        nulterminator ((t_cmd *)((t_sub *)cmd)->sub);
+        nulterminator ((t_cmd *)((t_sub *)cmd)->cmd);
     }
 
     return ;
@@ -977,15 +992,15 @@ t_cmd *parsecmd(char *str)
 {
     t_cmd *cmdtree;
     char *end;
-
-    if(lexer(str))
+    if(str[0] == '\0')
         return (free(str), NULL);
-    if(checkblock(str)) // parse des () pour eviter de free apres tout l'arbre une fois parseline lance
-        return (free(str), NULL); // Need to free STR
+    if(lexer(str))
+        return (NULL);
+    // if(checkblock(str)) // parse des () pour eviter de free apres tout l'arbre une fois parseline lance
+    //     return (NULL); // Need to free STR
     end = str + ft_strlen(str);
-    cmdtree = parseline(&str, end);
-    // A enlever a la fin FPRINTF pour debug
-    if(str != end)
+    cmdtree = parseline(&str, end);  
+    if(str != end)      // A enlever a la fin FPRINTF pour debug
         fprintf(stderr, "leftover data: %s\n", str);
     nulterminator(cmdtree);
     emptyswitch(cmdtree);
@@ -1098,7 +1113,7 @@ void printer(t_cmd *cmd, int s, int level) {
         case 4:
             sub = (t_sub *)cmd;
             printf("SUB\n");
-            printer(sub->sub, 0, level + 1);
+            printer(sub->cmd, 0, level + 1);
             break;
 
         default:
@@ -1112,11 +1127,35 @@ void free_args(t_execcmd *ex)
     int i;
 
     i = 0;
-    while(ex->args[i])
+    while(ex->args[i] != 0)
     {
         free(ex->args[i]);
         i++;
     }
+    free(ex->args[i]);
+}
+
+
+void free_exec(t_execcmd *ex)
+{
+        free_args(ex);
+        free(ex);
+}
+void free_sub(t_sub *sub)
+{
+        tree_free(&sub->cmd);
+        free(sub);
+}
+void  free_redir(t_redircmd *re)
+{
+        tree_free(&re->cmd);
+        free(re);
+}
+void free_double(t_doublecmd *db)
+{
+    tree_free(&db->left);
+    tree_free(&db->right);
+    free(db);
 }
 
 void tree_free(t_cmd **tree)
@@ -1124,31 +1163,18 @@ void tree_free(t_cmd **tree)
     t_execcmd *ex;
     t_redircmd *re;
     t_doublecmd *db;
+    t_sub *sub;
 
     if (tree == NULL || *tree == NULL)
-        return;
+        return ;
     if ((*tree)->type == REDIR) 
-    {
-        re = (t_redircmd *)(*tree);
-        if(re->cmd->type == EXEC)
-        {   
-            free(re->cmd);
-        }
-        else
-            tree_free(&re->cmd);
-        free(re);
-    }
+        free_redir((t_redircmd *)(*tree));
     else if ((*tree)->type == EXEC)
-    {   
-        ex = (t_execcmd *)(*tree);
-        free_args(ex);
-        free(ex);
-    }
-    else
-    {
-        db = (t_doublecmd *)(*tree);
-        return(tree_free(&db->left), tree_free(&db->right), free(db));
-    }
+        free_exec((t_execcmd *)(*tree));
+    else if ((*tree)->type == SUB)
+        free_sub((t_sub *)(*tree));
+    else// if ((*tree)->type == PIPE || (*tree)->type == AND || (*tree)->type == OR)
+        free_double((t_doublecmd *)(*tree));
 }
 // PIPEX FOR PATH
 
@@ -1266,7 +1292,6 @@ void ft_exec(t_cmd *tree, char **env)
         ex = (t_execcmd *)tree;
         printf("je rentre dans le exec\n");
         printer((t_cmd *)ex, 0, 0);
-        // execve(ex->args[0], ex->args, env);
         execve(get_path(ex->args[0], env), ex->args, NULL);
     }
     if(tree->type == AND || tree->type == OR)
@@ -1289,12 +1314,7 @@ void ft_exec(t_cmd *tree, char **env)
     return ;
 }
 
-typedef struct s_lexer
-{
-    int type;
-    struct s_lexer *next;
-    struct s_lexer *prev;
-}   t_lexer;
+
 
 
 // echo a > b && echo b > c || ()
@@ -1346,7 +1366,7 @@ void	ft_lstadd_back(t_lexer **lst, t_lexer **new)
 	}
 }
 
-int add_lex_node(t_lexer **lex, char *str, int *i)
+int add_quote_node(t_lexer **lex, char *str, int *i, char c)
 {
 
     t_lexer *new;
@@ -1365,23 +1385,84 @@ int add_lex_node(t_lexer **lex, char *str, int *i)
 
     return 0;
 }
+void skip_quotes(char *str, int *i)
+{
+    char temp;
+
+    temp = str[*i];  
+    (*i)++;          
+    while (str[*i] && str[*i] != temp)
+        (*i)++;
+    if (str[*i] == temp)
+        (*i)++;
+    if (str[*i] == '\'' || str[*i] == '\"'){printf("%s\n\n\n", str + *i);
+        skip_quotes(str, i);}
+}
+int add_lex_node(t_lexer **lex, char *str, int *i)
+{
+    t_lexer *new;
+
+    new = malloc(sizeof(*new));
+    if (!new)
+        return (1);
+    while (str[*i] && (ft_strchr(" \t\n\r\v><|&()", str[*i]) == 0))
+    {
+        if (str[*i] == '\'' || str[*i] == '\"')
+            skip_quotes(str, i);
+        else
+            (*i)++;  
+    }
+    new->type = 1;
+    new->next = NULL;
+    new->prev = NULL;
+    ft_lstadd_back(lex, &new);
+    return 0;
+}
+
+int lexer(char *str)
+{
+    int i = 0;
+    t_lexer *lexer = NULL;
+
+    while (str[i])
+    {
+        while (str[i] && ft_strchr(" \t\n\r\v", str[i]))
+            i++;
+        if (str[i] && ft_strchr("><|&()", str[i]))
+        {
+            if (sub_lexer(&lexer, str, &i)) 
+                return (free_lexer(lexer), 1);
+            continue;
+        }
+        if (str[i] && !ft_strchr(" \t\n\r\v><|&()", str[i]))
+        {
+            if (add_lex_node(&lexer, str, &i)) 
+                return (free_lexer(lexer), 1);
+        }
+    }
+    if (lexing_check(lexer))
+        return (free_lexer(lexer), 1);
+    return (free_lexer(lexer), 0);
+}
 
 int sub_lexer(t_lexer **lex, char *str, int *i)
 {
     t_lexer *new;
+
     new = malloc(sizeof(*new));
-    if(!new)
+    if (!new)
         return (1);
-    if(str[*i] == '>')
+
+    if (str[*i] == '>')
     {
         new->type = 3;
-        if(str[*i + 1] == '>')
+        if (str[*i + 1] == '>')  
             (*i)++;
     }
-    else if(str[*i] == '<')
+    else if (str[*i] == '<')
     {
         new->type = 2;
-        if(str[*i + 1] == '<') // Faudra lancer le heredoc ici
+        if (str[*i + 1] == '<')  
         {
             new->type = 9;
             (*i)++;
@@ -1394,26 +1475,28 @@ int sub_lexer(t_lexer **lex, char *str, int *i)
     else if (str[*i] == '&')
     {
         new->type = 4;
-        if (str[*i + 1] == '&')
+        if (str[*i + 1] == '&') 
             (*i)++;
         else
-            return (1);
+            return (1);  
     }
     else if (str[*i] == '|')
     {
         new->type = 5;
-        if(str[*i + 1] == '|')
+        if (str[*i + 1] == '|')
         {
             new->type = 8;
             (*i)++;
         }
     }
+
     (*i)++;
     new->next = NULL;
     new->prev = NULL;
     ft_lstadd_back(lex, &new);
     return 0;
 }
+
 
 int prev_check(t_lexer *lex, char *str)
 {
@@ -1424,8 +1507,10 @@ int prev_check(t_lexer *lex, char *str)
         return (1);
     while(str[i])
     {   
-        if(lex->prev == 0)
+        printf("prev : %c\n", lex->prev->type);
+        if(lex->prev == NULL)
         {
+            printf("\n\nici ca bug\n\n");
             if(str[i] == '-')
                 return (0);
             else
@@ -1457,24 +1542,116 @@ int next_check(t_lexer *lex, char *str)
     }
     return (1);
 }
-// Need to check RULES for REDIR 2-3
-
-typedef enum e_lex
+int first_type_check(int lex, int *i)
 {
-    lstart = 0,
-    lend = 1,
-    lword = 2,
-    llt = 6,
-    lgt = 14,
-    land = 30,
-    lpipe = 62,
-    lop = 126,
-    lcp = 254,
-    lor = 510,
-    lheredoc = 1022
+    if(lex != 1 && lex != 6)
+    {
+        printf("Minishell: syntax error near unexpected token `newline\'\n");
+        return (1);
+    }
+    if(lex == 6)
+        (*i)++;
+    return (0);
+}
 
-}   t_lex;
+int type_check(t_lexer *lex, int *i)
+{
 
+    if(lex->type == 1)
+    { // WORD 
+        if(prev_check(lex, "-12345689"))
+            // if(prev_check(lex, "-12345689") || next_check(lex, "123457890"))
+        {
+            printf("Lexer : sytax error\n");
+            return (1);
+        }
+    }
+    else if(lex->type == 2) // <
+    {
+        if(prev_check(lex, "-145678"))
+        // if(prev_check(lex, "-145678") || next_check(lex, "19"))
+        {
+            printf("Minishell: syntax error near unexpected token `newline'\n");
+            return (1);
+        }    
+    }
+    else if(lex->type == 3) // > >>
+    {
+        if(prev_check(lex, "-145678"))
+        // if(prev_check(lex, "-145678") || next_check(lex, "19"))
+        {
+            printf("Minishell: syntax error near unexpected token `newline'\n");
+            return (1);
+        }
+    }
+    else if(lex->type == 4) // AND
+    {
+        if(prev_check(lex, "17"))
+        // if(prev_check(lex, "17") || next_check(lex, "12369"))
+        {
+            printf("Minishell: syntax error near unexpected token `&&\'\n");
+            return (1);
+        }    
+    }
+    else if(lex->type == 5) // PIPE
+    {
+        if(prev_check(lex, "179"))
+        // if(prev_check(lex, "179") || next_check(lex, "12369"))
+        {
+            printf("Minishell: syntax error near unexpected token `|\'\n");
+            return (1);
+        }
+    }
+    else if(lex->type == 6 && ++(*i))
+    {
+        printf("\n\n JE RENTRE ICI\n\n");
+         // (
+        if(prev_check(lex, "-45680"))
+        // if(prev_check(lex, "-45680") || next_check(lex, "12369"))
+        {
+            printf("Minishell: syntax error near unexpected token `(\'\n");
+            return (1);
+        }
+    }
+    else if(lex->type == 7 && (*i)-- >= -1) // )
+    {
+        if(prev_check(lex, "17"))
+        // if(prev_check(lex, "17") || next_check(lex, "2345789"))
+        {
+            printf("Minishell: syntax error near unexpected token `)\'\n");
+            return (1);
+        }
+    }
+    else if(lex->type == 8) // OR
+    {
+        if(prev_check(lex, "17"))
+        // if(prev_check(lex, "17") || next_check(lex, "12369"))
+        {
+            printf("Minishell: syntax error near unexpected token ||\n");
+            return (1);
+        }
+    }
+    else if(lex->type == 9) // <<
+    {
+        // Needs to lunch HEREDOC here
+        if(prev_check(lex, "-145678")) // pas sur la?????
+        // if(prev_check(lex, "-145678") || next_check(lex, "1")) // pas sur la?????
+        {
+            printf("Minishell: syntax error near unexpected token `<<\'\n");
+            return (1);
+        }    
+    }
+    return (0);
+}
+int last_type_check(int lex)
+{
+    if(lex != 1 && lex != 7)
+    {
+        printf("Minishell: syntax error near unexpected token `newline\'\n");
+        return (1);
+    }
+    return (0);
+}
 int lexing_check(t_lexer *lexer)
 {
     t_lexer *lex;
@@ -1483,94 +1660,20 @@ int lexing_check(t_lexer *lexer)
 
     i = 0;
     lex = lexer;
+    if(first_type_check(lex->type, &i))
+        return (1);
+    lex = lex->next;
     while(lex)
     {
-        if(lex->type == 1)
-        { // WORD 
-            if(prev_check(lex, "-12345689"))
-            // if(prev_check(lex, "-12345689") || next_check(lex, "123457890"))
-            {
-                printf("Lexer : sytax error\n");
-                return (1);
-            }
-        }
-        else if(lex->type == 2) // <
-        {
-            if(prev_check(lex, "-145678"))
-            // if(prev_check(lex, "-145678") || next_check(lex, "19"))
-            {
-                printf("Minishell: syntax error near unexpected token `newline'\n");
-                return (1);
-            }    
-        }
-        else if(lex->type == 3) // > >>
-        {
-            if(prev_check(lex, "-145678"))
-            // if(prev_check(lex, "-145678") || next_check(lex, "19"))
-            {
-                printf("Minishell: syntax error near unexpected token `newline'\n");
-                return (1);
-            }
-        }
-        else if(lex->type == 4) // AND
-        {
-            if(prev_check(lex, "17"))
-            // if(prev_check(lex, "17") || next_check(lex, "12369"))
-            {
-                printf("Minishell: syntax error near unexpected token `&&\'\n");
-                return (1);
-            }    
-        }
-        else if(lex->type == 5) // PIPE
-        {
-            if(prev_check(lex, "179"))
-            // if(prev_check(lex, "179") || next_check(lex, "12369"))
-            {
-                printf("Minishell: syntax error near unexpected token `|\'\n");
-                return (1);
-            }
-        }
-        else if(lex->type == 6 && ++i)
-        {
-         // (
-            if(prev_check(lex, "-45680"))
-            // if(prev_check(lex, "-45680") || next_check(lex, "12369"))
-            {
-                printf("Minishell: syntax error near unexpected token `(\'\n");
-                return (1);
-        }
-            }
-        else if(lex->type == 7 && i-- >= -1) // )
-        {
-            if(prev_check(lex, "17"))
-            // if(prev_check(lex, "17") || next_check(lex, "2345789"))
-            {
-                printf("Minishell: syntax error near unexpected token `)\'\n");
-                return (1);
-            }
-        }
-        else if(lex->type == 8) // OR
-        {
-            if(prev_check(lex, "17"))
-            // if(prev_check(lex, "17") || next_check(lex, "12369"))
-            {
-                printf("Minishell: syntax error near unexpected token ||\n");
-                return (1);
-            }
-        }
-        else if(lex->type == 9) // <<
-        {
-            // Needs to lunch HEREDOC here
-            if(prev_check(lex, "-145678")) // pas sur la?????
-            // if(prev_check(lex, "-145678") || next_check(lex, "1")) // pas sur la?????
-            {
-                printf("Minishell: syntax error near unexpected token `<<\'\n");
-                return (1);
-            }    
-        }
+        if(type_check(lex, &i))
+            return (1);
+        if(lex->next == NULL)
+            if(last_type_check(lex->type))
+                return (1);   
         lex = lex->next;
         if(i < 0)
         {
+            
             printf("Minishell: syntax error near unexpected token `)\'\n");
             return (1);
         }
@@ -1580,12 +1683,6 @@ int lexing_check(t_lexer *lexer)
         printf("Minishell: syntax error near unexpected token `(\'\n");
         return (1);
     }
-    // if(next_check(ft_lstlast(lexer)->prev, "12379"))
-    // {
-    //     printf("Minishell: syntax error near unexpected token `newline\'\n");
-    //     return (1);
-    // }
-
     return (0);
 }
 void free_lexer(t_lexer *lexer)
@@ -1599,33 +1696,10 @@ void free_lexer(t_lexer *lexer)
         free(lexer);
         lexer = lex;
     }
+    free(lexer);
 }
 
-int lexer(char *str)
-{
-    int i;
-    t_lexer *lexer;
-    
-    lexer = NULL;
-    i = 0;
-    while(str[i])
-    {
-        while(ft_strchr(" \t\n\r\v", str[i]))
-            i++;
-        if(str[i] && ft_strchr("><|&()", str[i]))
-        {
-            if(sub_lexer(&lexer, str, &i))
-                return (free_lexer(lexer), 1); // faut free le lexer
-            continue;
-        }
-        if(str[i] && !ft_strchr(" \t\n\r\v", str[i]))
-            if(add_lex_node(&lexer, str, &i) == 1)
-                return (free_lexer(lexer), 1);// faut free le lexer
-    }
-    if(lexing_check(lexer))
-        return (free_lexer(lexer), 1);
-    return (free_lexer(lexer),0);
-}
+
 
 int main(int ac, char **av, char **env)
 {
@@ -1642,6 +1716,7 @@ int main(int ac, char **av, char **env)
         free(copy);
         return (0);
     }
+    free(copy);
     // ft_exec(tree, env);
     return (1);
 }
