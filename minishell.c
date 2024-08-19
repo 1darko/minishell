@@ -148,7 +148,10 @@ typedef struct s_lexer
     struct s_lexer *prev;
 }   t_lexer;
 
-
+t_cmd *redircmd_here2(t_herepipe **pipe, t_cmd *cmd);
+t_cmd *redircmd_here(t_herepipe **pipe, t_cmd *cmd);
+void findredir(t_cmd *cmd, t_cmd **temp);
+int init_heredoc(t_lexer *lex, t_shell **shell);
 t_cmd *parse_or(t_shell *shell, char **ptr);
 t_cmd *parse_and(t_shell *shell, char **ptr);
 t_cmd *parseline(t_shell *shell, char **ptr);
@@ -164,14 +167,14 @@ t_cmd *redircmd_out(t_cmd *cmd, char *file, char *efile, int fd);
 t_cmd *redircmd_append(t_cmd *cmd, char *file, char *efile, int fd);
 t_cmd *execcmd(void);
 t_cmd *pipecmd(t_cmd *left, t_cmd *right);
-t_cmd *parseredirs_er(t_herepipe *pipes, t_cmd *cmd, char **ps);
-void    parseredirs_primo(t_herepipe *pipes, t_cmd **cmd, char **ps, int *check);
+t_cmd *parseredirs_er(t_herepipe **pipes, t_cmd *cmd, char **ps);
+void    parseredirs_primo(t_herepipe **pipes, t_cmd **cmd, char **ps, int *check);
 int gettoken(char **ptr, char **ptr_token, char **ptr_endtoken);
 void problem(char *s);
 t_cmd *parseblock(t_shell *shell, char **ps,  int *check);
 t_cmd *parseexec(t_shell *shell, char **ps);
 t_cmd *parse_double_node(t_shell *shell, char **ptr);
-t_cmd *parsecmd(t_shell **shell, char *str);
+void *parsecmd(t_shell **shell, char *str);
 t_cmd *parse_all_redirections(t_cmd *cmd, char **ps);
 int parse_single_argument(t_execcmd *cmd, char **ps, int argc);
 void initialize_cmd(t_cmd **ret, t_execcmd **cmd, int *argc);
@@ -395,6 +398,30 @@ int lfsymbol(char **ptr, char *c)
 
 // Constructors
 
+char *ft_filecpy(char *file, char *efile)
+{
+    char *copy;
+    int i;
+    int j;
+    i = 0;
+
+    if(!file || !efile)
+        return (NULL);
+    while(file[i] && file[i] != *efile)
+        i++;
+    copy = malloc(sizeof(char) * (i + 1));
+    if(!copy)
+        problem("malloc failed");
+    i = 0;
+    while(file[i] && file[i] != *efile)
+    {
+        copy[i] = file[i];
+        i++;
+    }
+    copy[i] = '\0';
+    return (copy);
+}
+
 t_cmd *redircmd_out(t_cmd *cmd, char *file, char *efile, int fd)
 {
     t_redircmd *redir;
@@ -403,9 +430,9 @@ t_cmd *redircmd_out(t_cmd *cmd, char *file, char *efile, int fd)
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->cmd = cmd;
-    redir->file = file;
+    redir->file = ft_filecpy(file, efile);
     redir->efile = efile;
-    redir->mode = O_WRONLY | O_CREAT | O_TRUNC;
+    redir->mode = O_RDONLY;
     redir->fd = fd;
     return((t_cmd *)redir);
 }
@@ -418,9 +445,9 @@ t_cmd *redircmd_in(t_cmd *cmd, char *file, char *efile, int fd)
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->cmd = cmd;
-    redir->file = file;
+    redir->file = ft_filecpy(file, efile);
     redir->efile = efile;
-    redir->mode = O_RDONLY;
+    redir->mode = O_WRONLY | O_CREAT | O_TRUNC;
     redir->fd = fd;
     return((t_cmd *)redir);
 }
@@ -430,13 +457,14 @@ t_cmd *redircmd_in2(t_cmd *cmd, char *file, char *efile, int fd)
     t_redircmd *redir;
     t_redircmd *temp;    
 
+
     temp = (t_redircmd *)((t_redircmd *)cmd)->cmd;
     redir = malloc(sizeof(*redir));
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
-    redir->file = file;
+    redir->file = ft_filecpy(file, efile);
     redir->efile = efile;
-    redir->mode = O_RDONLY;
+    redir->mode = O_WRONLY | O_CREAT | O_TRUNC;
     redir->fd = fd;
     redir->cmd = ((t_redircmd *)cmd)->cmd;
     ((t_redircmd *)cmd)->cmd = (t_cmd *)redir;
@@ -466,14 +494,15 @@ t_cmd *redircmd_out2(t_cmd *cmd, char *file, char *efile, int fd)
     redir = malloc(sizeof(*redir));
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
-    redir->file = file;
+    redir->file = ft_filecpy(file, efile);
     redir->efile = efile;
-    redir->mode = O_WRONLY | O_CREAT | O_TRUNC;
+    redir->mode = O_RDONLY;
     redir->fd = fd;
     redir->cmd = ((t_redircmd *)cmd)->cmd;
     ((t_redircmd *)cmd)->cmd = (t_cmd *)redir;
     return((t_cmd *)redir);
 }
+
 
 t_cmd *redircmd_append2(t_cmd *cmd, char *file, char *efile, int fd)
 {
@@ -485,6 +514,7 @@ t_cmd *redircmd_append2(t_cmd *cmd, char *file, char *efile, int fd)
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->file = file;
+    redir->file = ft_filecpy(file, efile);
     redir->efile = efile;
     redir->mode = O_WRONLY | O_CREAT | O_APPEND;
     redir->fd = fd;
@@ -493,14 +523,9 @@ t_cmd *redircmd_append2(t_cmd *cmd, char *file, char *efile, int fd)
     return((t_cmd *)redir);
 }
 
-t_cmd *redircmd_here2(t_herepipe *pipe, t_cmd *cmd)
+t_cmd *redircmd_here2(t_herepipe **pipe, t_cmd *cmd)
 {
     t_redircmd *redir;
-
-    t_redircmd *temp;    
-
-    temp = (t_redircmd *)((t_redircmd *)cmd)->cmd;
-
 
     redir = malloc(sizeof(*redir));
     if(!redir)
@@ -511,14 +536,14 @@ t_cmd *redircmd_here2(t_herepipe *pipe, t_cmd *cmd)
     redir->file = NULL;
     redir->efile = NULL;
     redir->mode = O_RDONLY;
-    while(pipe->next && pipe->stored != 1)
-        pipe = pipe->next;
-    redir->fd = pipe->fd;
+    while((*pipe)->next && (*pipe)->stored != 0)
+        (*pipe) = (*pipe)->next;
+    redir->fd = (*pipe)->fd;
+    (*pipe)->stored = 1;
     redir->cmd = ((t_redircmd *)cmd)->cmd;
     ((t_redircmd *)cmd)->cmd = (t_cmd *)redir;
     return ((t_cmd *)redir);
 }
-
 
 t_cmd *execcmd(void)
 {
@@ -577,68 +602,7 @@ t_cmd *parse_subshell(t_shell *shell, char **ps, int *check)
 }
 // Parsing functions
 
-t_cmd *parseredirs_er(t_herepipe *pipes, t_cmd *cmd, char **ps)
-{
-    char *ptr_file;
-    char *ptr_endfile;
-    int token;
-    t_cmd *temp;
-
-    temp = cmd;
-    while(lfsymbol(ps, "><"))
-    {
-        token = gettoken(ps, &ptr_file, &ptr_endfile);
-        if(gettoken(ps, &ptr_file, &ptr_endfile) != 'a')
-            problem("missing file for redirection");
- 
-        if(token == '>')
-            temp = redircmd_in2(temp, ptr_file, ptr_endfile, 1);
-        else if(token == '<')
-            temp = redircmd_out2(temp, ptr_file, ptr_endfile, 0);
-        else if(token == '+')
-            temp = redircmd_append2(temp, ptr_file, ptr_endfile, 1);
-        else if(token == 'h')
-            temp = redircmd_here2(pipes, temp);
-        else
-        {
-            problem("this aint a redirection");
-            break;
-        }
-    }
-    return (cmd);
-}
-
-void findredir(t_cmd *cmd, t_cmd **temp)
-{
-    *temp = cmd;
-    while ((*temp)->type == REDIR)
-    {
-        if (((t_redircmd *)(*temp))->cmd->type != REDIR)
-            break ;
-        *temp = ((t_redircmd *)(*temp))->cmd;
-    }
-}
-
-t_cmd *redircmd_here(t_herepipe *pipe, t_cmd *cmd)
-{
-    t_redircmd *redir;
-
-    redir = malloc(sizeof(*redir));
-    if(!redir)
-        problem("malloc failed");
-    ft_bzero(redir, sizeof(*redir));
-    redir->type = HERE;
-    redir->cmd = cmd;
-    redir->file = NULL;
-    redir->efile = NULL;
-    redir->mode = O_RDONLY;
-    while(pipe->next && pipe->stored != 1)
-        pipe = pipe->next;
-    redir->fd = pipe->fd;
-    return ((t_cmd *)redir);
-}
-
-void    parseredirs_primo(t_herepipe *pipes, t_cmd **cmd, char **ps, int *check)
+void    parseredirs_primo(t_herepipe **pipes, t_cmd **cmd, char **ps, int *check)
 {
     char *ptr_file;
     char *ptr_endfile;
@@ -659,7 +623,9 @@ void    parseredirs_primo(t_herepipe *pipes, t_cmd **cmd, char **ps, int *check)
         else if(token == '+')
             *cmd = redircmd_append(*cmd, ptr_file, ptr_endfile, 1);
         else if(token == 'h')
+        {
             *cmd = redircmd_here(pipes, *cmd);
+        }
         else
             problem("this aint a redirection");
         parseredirs_er(pipes, *cmd, ps);
@@ -667,6 +633,73 @@ void    parseredirs_primo(t_herepipe *pipes, t_cmd **cmd, char **ps, int *check)
     else
         parseredirs_er(pipes, temp, ps);
 }
+
+t_cmd *parseredirs_er(t_herepipe **pipes, t_cmd *cmd, char **ps)
+{
+    char *ptr_file;
+    char *ptr_endfile;
+    int token;
+    t_cmd *temp;
+
+    temp = cmd;
+    while(lfsymbol(ps, "><"))
+    {
+        token = gettoken(ps, &ptr_file, &ptr_endfile);
+        if(gettoken(ps, &ptr_file, &ptr_endfile) != 'a')
+            problem("missing file for redirection");
+ 
+        if(token == '>')
+            temp = redircmd_in2(temp, ptr_file, ptr_endfile, 1);
+        else if(token == '<')
+            temp = redircmd_out2(temp, ptr_file, ptr_endfile, 0);
+        else if(token == '+')
+            temp = redircmd_append2(temp, ptr_file, ptr_endfile, 1);
+        else if(token == 'h')
+        {
+            temp = redircmd_here2(pipes, temp);
+            // gettoken(ps, 0, 0);
+        }
+        else
+        {
+            problem("this aint a redirection");
+            break;
+        }
+    }
+    return (cmd);
+}
+
+void findredir(t_cmd *cmd, t_cmd **temp)
+{
+    *temp = cmd;
+    while ((*temp)->type == REDIR || (*temp)->type == HERE)
+    {
+        if (((t_redircmd *)(*temp))->cmd->type != REDIR)
+            break ;
+        *temp = ((t_redircmd *)(*temp))->cmd;
+    }
+}
+
+t_cmd *redircmd_here(t_herepipe **pipe, t_cmd *cmd)
+{
+    t_redircmd *redir;
+
+    redir = malloc(sizeof(*redir));
+    if(!redir)
+        problem("malloc failed");
+    ft_bzero(redir, sizeof(*redir));
+    redir->type = HERE;
+    redir->cmd = cmd;
+    redir->file = NULL;
+    redir->efile = NULL;
+    redir->mode = O_RDONLY;
+    while((*pipe)->next && (*pipe)->stored != 0)
+        (*pipe) = (*pipe)->next;
+    redir->fd = (*pipe)->fd;
+    (*pipe)->stored = 1;
+    return ((t_cmd *)redir);
+}
+
+
 char *other_token(char *temp, int *check)
 {
     char a = *temp;
@@ -720,13 +753,14 @@ int gettoken(char **ptr, char **ptr_token, char **ptr_endtoken)
     int check;
     
     temp = *ptr;
-    while(*temp && ft_strchr(" \t\n\r\v", *temp))
+    while(*temp && ft_strchr(" \t\n\r\v", *temp))   
         temp++;
     if(ptr_token)
         *ptr_token = temp;
     check = *temp;
     if(ft_strchr("<>()|&", check))
-    {        
+    {   
+        
         temp++;
         if(check == *temp && check != '(' && check != ')')
             extratoken(&temp, &check); // Checking for ||, &&, >>, <<
@@ -736,8 +770,6 @@ int gettoken(char **ptr, char **ptr_token, char **ptr_endtoken)
     if(ptr_endtoken)
         *ptr_endtoken = temp;
     *ptr = temp;
-    printf("ptr_endtoken: %s\n", *ptr_endtoken);
-    printf("ptr_token: %s\n", *ptr_token);
     return (check);
 }
 
@@ -798,7 +830,6 @@ int parse_single_argument(t_execcmd *cmd, char **ps, int argc)
     if (token == 'a') 
     {
         cmd->args[argc] = ft_strdup_arg(ptr_arg, ptr_earg);
-        printf("args[%d]: %s\n", argc, cmd->args[argc]);
         return (1);
     } 
     else if (token != 0)
@@ -812,17 +843,15 @@ t_cmd *parseexec(t_shell *shell, char **ps)
     t_execcmd *cmd;
     int argc;
     int check;
-
     check = 1;
     if(lfsymbol(ps, "("))
     {
         ret = parse_subshell(shell, ps, &check);
-        parseredirs_primo(shell->pipe, &ret, ps, &check);
+        parseredirs_primo(&shell->pipe, &ret, ps, &check);
         return (ret);
     }
     initialize_cmd(&ret, &cmd, &argc);
-    parseredirs_primo(shell->pipe, &ret, ps, &check);
-     
+    parseredirs_primo(&shell->pipe, &ret, ps, &check);
     while (!lfsymbol(ps, "|)<>&\0")) 
     {
         if (!parse_single_argument(cmd, ps, argc))
@@ -830,7 +859,7 @@ t_cmd *parseexec(t_shell *shell, char **ps)
         argc++;
         if (argc >= MAXARGS)
             problem("too many args");
-        parseredirs_primo(shell->pipe, &ret, ps, &check);
+        parseredirs_primo(&shell->pipe, &ret, ps, &check);
     }
     // parseredirs_primo(&temp, ps, es, &check);
     cmd->args[argc] = 0;
@@ -1019,7 +1048,7 @@ void emptyswitch(t_cmd *cmd)
     }
 }
 
-t_cmd *parsecmd(t_shell **shell, char *str)
+void *parsecmd(t_shell **shell, char *str)
 {
     t_cmd *cmdtree;
 
@@ -1030,9 +1059,9 @@ t_cmd *parsecmd(t_shell **shell, char *str)
     (*shell)->tree = parseline(*shell, &str);  
     if(*str)      // A enlever a la fin FPRINTF pour debug
         fprintf(stderr, "leftover data: %s\n", str);
-    nulterminator((*shell)->tree);
+    // nulterminator((*shell)->tree);
     emptyswitch((*shell)->tree);
-    return (cmdtree);
+    return (0);    
 }
 
 void printer(t_cmd *cmd, int s, int level) {
@@ -1042,13 +1071,12 @@ void printer(t_cmd *cmd, int s, int level) {
     t_orcmd *or;
     t_andcmd *and;
     t_sub *sub;
-
+    printf("INSIDE PRINTER\n\n");
     // Create indentation based on the current level
     for (int i = 0; i < level; i++) {
     //printf("  ");
     }
 
-    // Print the command based on its type
     switch (cmd->type) {
         case 1: // EXEC
             ex = (t_execcmd *)cmd;
@@ -1619,15 +1647,20 @@ int next_check(t_lexer *lex, char *str)
     }
     return (1);
 }
-int first_type_check(int lex, int *i, t_shell **shell)
+int first_type_check(t_lexer *lex, int *i, t_shell **shell)
 {
-    if(lex != 1 && lex != 6 && lex != 9)
+    if(lex->type != 1 && lex->type != 6 && lex->type != 9 && lex->type != 2)
     {
-    //printf("Minishell: syntax error near unexpected token `newline\'\n");
+        printf("Minishell: syntax error near unexpected token `newline\'\n");
         return (1);
     }
-    if(lex == 6)
+    if(lex->type == 6)
         (*i)++;
+    if(lex->type == 9)
+    {
+        if(init_heredoc(lex, shell))
+            return (1);
+    }
     return (0);
 }
 
@@ -1719,23 +1752,23 @@ int heredoc_filler(char *end, int pipefd)
 //     return (*temp);
 // }
 
-void  ft_pipeaddback(t_shell *shell, t_herepipe *new)
+void  ft_pipeaddback(t_shell **shell, t_herepipe *new)
 {
     t_herepipe *temp;
 
-    if(shell->pipe == NULL)
+    if((*shell)->pipe == NULL)
     {
-        shell->pipe = new;
+        (*shell)->pipe = new;
         return ;
     }
-    temp = shell->pipe;
+    temp = (*shell)->pipe;
     while(temp->next)
         temp = temp->next;
     temp->next = new;
 }
 
 
-int init_heredoc(t_lexer *lex, t_shell *shell)
+int init_heredoc(t_lexer *lex, t_shell **shell)
 {
     char *eof;
     int err;
@@ -1775,63 +1808,55 @@ int type_check(t_lexer *lex, int *i, t_shell **shell)
     { // WORD 
         if(prev_check(lex, "-12345689"))
         {
-        //printf("Lexer : sytax error\n");
+            printf("Lexer : sytax error\n");
             return (1);
         }
     }
     else if(lex->type == 2) // <
     {
         if(prev_check(lex, "-145678"))
-        // if(prev_check(lex, "-145678") || next_check(lex, "19"))
         {
-        //printf("Minishell: syntax error near unexpected token `newline'\n");
+            printf("Minishell: syntax error near unexpected token `newline'\n");
             return (1);
         }    
     }
     else if(lex->type == 3) // > >>
     {
         if(prev_check(lex, "-145678"))
-        // if(prev_check(lex, "-145678") || next_check(lex, "19"))
         {
-        //printf("Minishell: syntax error near unexpected token `newline'\n");
+            printf("Minishell: syntax error near unexpected token `newline'\n");
             return (1);
         }
     }
     else if(lex->type == 4) // AND
     {
         if(prev_check(lex, "17"))
-        // if(prev_check(lex, "17") || next_check(lex, "12369"))
         {
-        //printf("Minishell: syntax error near unexpected token `&&\'\n");
+            printf("Minishell: syntax error near unexpected token `&&\'\n");
             return (1);
         }    
     }
     else if(lex->type == 5) // PIPE
     {
         if(prev_check(lex, "179"))
-        // if(prev_check(lex, "179") || next_check(lex, "12369"))
         {
-        //printf("Minishell: syntax error near unexpected token `|\'\n");
+            printf("Minishell: syntax error near unexpected token `|\'\n");
             return (1);
         }
     }
     else if(lex->type == 6 && ++(*i))
     {
-    //printf("\n\n JE RENTRE ICI\n\n");
-         // (
         if(prev_check(lex, "-45680"))
-        // if(prev_check(lex, "-45680") || next_check(lex, "12369"))
         {
-        //printf("Minishell: syntax error near unexpected token `(\'\n");
+            printf("Minishell: syntax error near unexpected token `(\'\n");
             return (1);
         }
     }
     else if(lex->type == 7 && (*i)-- >= -1) // )
     {
         if(prev_check(lex, "17"))
-        // if(prev_check(lex, "17") || next_check(lex, "2345789"))
         {
-        //printf("Minishell: syntax error near unexpected token `)\'\n");
+        printf("Minishell: syntax error near unexpected token `)\'\n");
             return (1);
         }
     }
@@ -1840,7 +1865,7 @@ int type_check(t_lexer *lex, int *i, t_shell **shell)
         if(prev_check(lex, "17"))
         // if(prev_check(lex, "17") || next_check(lex, "12369"))
         {
-        //printf("Minishell: syntax error near unexpected token ||\n");
+            printf("Minishell: syntax error near unexpected token ||\n");
             return (1);
         }
     }
@@ -1848,10 +1873,10 @@ int type_check(t_lexer *lex, int *i, t_shell **shell)
     {
         if(prev_check(lex, "-145678")) // pas sur la?????
         {
-        //printf("Minishell: syntax error near unexpected token `<<\'\n");
+            printf("Minishell: syntax error near unexpected token `<<\'\n");
             return (1);
         }    
-        init_heredoc(lex, *shell);
+        init_heredoc(lex, shell);
     }
     return (0);
 }
@@ -1859,7 +1884,7 @@ int last_type_check(int lex)
 {
     if(lex != 1 && lex != 7)
     {
-    //printf("Minishell: syntax error near unexpected token `newline\'\n");
+        printf("Minishell: syntax error near unexpected token `newline\'\n");
         return (1);
     }
     return (0);
@@ -1872,7 +1897,7 @@ int lexing_check(t_shell **shell, t_lexer *lexer)
 
     i = 0;
     lex = lexer;
-    if(first_type_check(lex->type, &i, shell))
+    if(first_type_check(lex, &i, shell))
         return (1);
     lex = lex->next;
     while(lex)
@@ -1885,14 +1910,13 @@ int lexing_check(t_shell **shell, t_lexer *lexer)
         lex = lex->next;
         if(i < 0)
         {
-            
-        //printf("Minishell: syntax error near unexpected token `)\'\n");
+            printf("Minishell: syntax error near unexpected token `)\'\n");
             return (1);
         }
     }
     if(i)
     {
-    //printf("Minishell: syntax error near unexpected token `(\'\n");
+        printf("Minishell: syntax error near unexpected token `(\'\n");
         return (1);
     }
     return (0);
@@ -1916,7 +1940,124 @@ void free_lexer(t_lexer *lexer)
 
 }
 
+void print_cmd(t_cmd *cmd, int indent);
 
+void print_indent(int indent) {
+    for (int i = 0; i < indent; i++) {
+        printf("  ");
+    }
+}
+
+void print_redircmd(t_redircmd *redir, int indent) {
+    print_indent(indent);
+    printf("Redirection Command:\n");
+    print_indent(indent + 1);
+    printf("Type: %s\n", redir->type == REDIR ? "REDIR" : "HERE");
+    print_indent(indent + 1);
+    printf("File: %s\n", redir->file);
+    print_indent(indent + 1);
+    printf("Mode: %d\n", redir->mode);
+    print_indent(indent + 1);
+    printf("FD: %d\n", redir->fd);
+    print_cmd(redir->cmd, indent + 1);
+}
+
+void print_execcmd(t_execcmd *exec, int indent) {
+    print_indent(indent);
+    printf("Execution Command:\n");
+    for (int i = 0; exec->args[i]; i++) {
+        print_indent(indent + 1);
+        printf("Arg[%d]: %s\n", i, exec->args[i]);
+    }
+}
+
+void print_pipecmd(t_pipecmd *pipe, int indent) {
+    print_indent(indent);
+    printf("Pipe Command:\n");
+    print_indent(indent + 1);
+    printf("Left:\n");
+    print_cmd(pipe->left, indent + 2);
+    print_indent(indent + 1);
+    printf("Right:\n");
+    print_cmd(pipe->right, indent + 2);
+}
+
+void print_andcmd(t_andcmd *and, int indent) {
+    print_indent(indent);
+    printf("AND Command:\n");
+    print_indent(indent + 1);
+    printf("Left:\n");
+    print_cmd(and->left, indent + 2);
+    print_indent(indent + 1);
+    printf("Right:\n");
+    print_cmd(and->right, indent + 2);
+}
+
+void print_orcmd(t_orcmd *or, int indent) {
+    print_indent(indent);
+    printf("OR Command:\n");
+    print_indent(indent + 1);
+    printf("Left:\n");
+    print_cmd(or->left, indent + 2);
+    print_indent(indent + 1);
+    printf("Right:\n");
+    print_cmd(or->right, indent + 2);
+}
+
+void print_doublecmd(t_doublecmd *dbl, int indent) {
+    print_indent(indent);
+    printf("Double Command:\n");
+    print_indent(indent + 1);
+    printf("Left:\n");
+    print_cmd(dbl->left, indent + 2);
+    print_indent(indent + 1);
+    printf("Right:\n");
+    print_cmd(dbl->right, indent + 2);
+}
+
+void print_subcmd(t_sub *sub, int indent) {
+    print_indent(indent);
+    printf("Sub Command:\n");
+    print_cmd(sub->cmd, indent + 1);
+}
+
+void print_cmd(t_cmd *cmd, int indent) {
+    if (!cmd) return;
+
+    switch (cmd->type) {
+        case SHELL:
+            print_indent(indent);
+            printf("Shell Command\n");
+            break;
+        case EXEC:
+            print_execcmd((t_execcmd *)cmd, indent);
+            break;
+        case REDIR:
+        case HERE:
+            print_redircmd((t_redircmd *)cmd, indent);
+            break;
+        case PIPE:
+            print_pipecmd((t_pipecmd *)cmd, indent);
+            break;
+        case AND:
+            print_andcmd((t_andcmd *)cmd, indent);
+            break;
+        case OR:
+            print_orcmd((t_orcmd *)cmd, indent);
+            break;
+        case SUB:
+            print_subcmd((t_sub *)cmd, indent);
+            break;
+        case EMPTY:
+            print_indent(indent);
+            printf("Empty Command\n");
+            break;
+        default:
+            print_indent(indent);
+            printf("Unknown Command Type\n");
+            break;
+    }
+}
 
 int main(int ac, char **av, char **env)
 {
@@ -1929,12 +2070,11 @@ int main(int ac, char **av, char **env)
     char *copy;
 
     copy = strdup(av[1]);
-    shell->tree = parsecmd(&shell, copy);
-    // if(shell->tree)
+    parsecmd(&shell, copy);
     // {
-    //     // printer(shell->tree, 0, 0);
-    //     tree_free(&shell->tree);
-    //     free(copy);
+    print_cmd(shell->tree, 0);
+    //     // tree_free(&shell->tree);
+    //     // free(copy);
     //     return (0);
     // }
     // free(copy);
