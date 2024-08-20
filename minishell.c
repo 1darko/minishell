@@ -63,7 +63,7 @@ typedef struct s_var
 
 typedef struct s_herepipe
 {
-    int fd;
+    char *str;
     int stored;
     struct s_herepipe *next;
 } t_herepipe;
@@ -108,6 +108,7 @@ typedef struct s_redircmd
     char *efile;
     int mode;
     int fd;
+    char *heredoc;
 }   t_redircmd;
 
 typedef struct s_andcmd
@@ -148,6 +149,8 @@ typedef struct s_lexer
     struct s_lexer *prev;
 }   t_lexer;
 
+
+int type_check(t_lexer *lex, int *i, t_shell **shell);
 t_cmd *redircmd_here2(t_herepipe **pipe, t_cmd *cmd);
 t_cmd *redircmd_here(t_herepipe **pipe, t_cmd *cmd);
 void findredir(t_cmd *cmd, t_cmd **temp);
@@ -522,6 +525,46 @@ t_cmd *redircmd_append2(t_cmd *cmd, char *file, char *efile, int fd)
     ((t_redircmd *)cmd)->cmd = (t_cmd *)redir;
     return((t_cmd *)redir);
 }
+char	*ft_strdup(const char *s)
+{
+	size_t	len;
+	size_t	cur;
+	char	*dup;
+
+	cur = 0;
+	len = ft_strlen((char *)s);
+	dup = (char *)malloc(sizeof(char) * len + 1);
+	if (dup == 0)
+		return (NULL);
+	while (s[cur] != '\0')
+	{
+		dup[cur] = s[cur];
+		cur++;
+	}
+	dup[cur] = '\0';
+	return (dup);
+}
+
+t_cmd *redircmd_here(t_herepipe **pipe, t_cmd *cmd)
+{
+    t_redircmd *redir;
+
+    redir = malloc(sizeof(*redir));
+    if(!redir)
+        problem("malloc failed");
+    ft_bzero(redir, sizeof(*redir));
+    redir->type = HERE;
+    redir->cmd = cmd;
+    redir->file = NULL;
+    redir->efile = NULL;
+    redir->mode = O_RDONLY;
+    while((*pipe)->next && (*pipe)->stored != 0)
+        (*pipe) = (*pipe)->next;
+    redir->fd = 0;
+    redir->heredoc = ft_strdup((*pipe)->str);
+    (*pipe)->stored = 1;
+    return ((t_cmd *)redir);
+}
 
 t_cmd *redircmd_here2(t_herepipe **pipe, t_cmd *cmd)
 {
@@ -538,7 +581,8 @@ t_cmd *redircmd_here2(t_herepipe **pipe, t_cmd *cmd)
     redir->mode = O_RDONLY;
     while((*pipe)->next && (*pipe)->stored != 0)
         (*pipe) = (*pipe)->next;
-    redir->fd = (*pipe)->fd;
+    redir->fd = 0;
+    redir->heredoc = ft_strdup((*pipe)->str);
     (*pipe)->stored = 1;
     redir->cmd = ((t_redircmd *)cmd)->cmd;
     ((t_redircmd *)cmd)->cmd = (t_cmd *)redir;
@@ -656,8 +700,10 @@ t_cmd *parseredirs_er(t_herepipe **pipes, t_cmd *cmd, char **ps)
             temp = redircmd_append2(temp, ptr_file, ptr_endfile, 1);
         else if(token == 'h')
         {
+            // printf("we balling\n");
             temp = redircmd_here2(pipes, temp);
             // gettoken(ps, 0, 0);
+            // printf("we balling2\n");
         }
         else
         {
@@ -673,31 +719,12 @@ void findredir(t_cmd *cmd, t_cmd **temp)
     *temp = cmd;
     while ((*temp)->type == REDIR || (*temp)->type == HERE)
     {
-        if (((t_redircmd *)(*temp))->cmd->type != REDIR)
+        if (((t_redircmd *)(*temp))->cmd->type != REDIR && ((t_redircmd *)(*temp))->cmd->type != HERE)
             break ;
         *temp = ((t_redircmd *)(*temp))->cmd;
     }
 }
 
-t_cmd *redircmd_here(t_herepipe **pipe, t_cmd *cmd)
-{
-    t_redircmd *redir;
-
-    redir = malloc(sizeof(*redir));
-    if(!redir)
-        problem("malloc failed");
-    ft_bzero(redir, sizeof(*redir));
-    redir->type = HERE;
-    redir->cmd = cmd;
-    redir->file = NULL;
-    redir->efile = NULL;
-    redir->mode = O_RDONLY;
-    while((*pipe)->next && (*pipe)->stored != 0)
-        (*pipe) = (*pipe)->next;
-    redir->fd = (*pipe)->fd;
-    (*pipe)->stored = 1;
-    return ((t_cmd *)redir);
-}
 
 
 char *other_token(char *temp, int *check)
@@ -1517,6 +1544,7 @@ int add_lex_node(t_lexer **lex, char *str, int *i)
     new->prev = NULL;
 //printf("before : %s\n", str + before);
     new->heredoc = ft_strdup_lex(str + before, size);
+    printf("heredoc : %s\n", new->heredoc);
     ft_lstadd_back(lex, &new);
     return 0;
 }
@@ -1526,7 +1554,7 @@ int lexer(t_shell **shell, char *str)
     int i = 0;
     t_lexer *lexer;
 
-    lexer = malloc(sizeof(*lexer));
+    lexer = malloc(sizeof(lexer));
     ft_bzero(&lexer, sizeof(lexer));
     while (str[i])
     {
@@ -1560,8 +1588,11 @@ int sub_lexer(t_lexer **lex, char *str, int *i)
     if (str[*i] == '>')
     {
         new->type = 3;
-        if (str[*i + 1] == '>')  
+        if (str[*i + 1] == '>')
+        {  
             (*i)++;
+            new->type = 0;
+        }
     }
     else if (str[*i] == '<')
     {
@@ -1632,6 +1663,8 @@ int next_check(t_lexer *lex, char *str)
     int i;
 
     i = 0;
+    if(!lex)
+        return (1);
     while(str[i])
     {
         if(lex->next == 0)
@@ -1649,17 +1682,28 @@ int next_check(t_lexer *lex, char *str)
 }
 int first_type_check(t_lexer *lex, int *i, t_shell **shell)
 {
-    if(lex->type != 1 && lex->type != 6 && lex->type != 9 && lex->type != 2)
+    if(lex->type != 1 && lex->type != 6 && lex->type != 9 && lex->type != 2 && lex->type != 3)
+    {
+        type_check(lex, i, shell);
+        return (1);
+    }
+    if(lex->type == 1)
+        return (0);
+    if((lex->type == 6 || lex->type == 2 || lex->type == 3) && lex->next == 0)
     {
         printf("Minishell: syntax error near unexpected token `newline\'\n");
         return (1);
     }
-    if(lex->type == 6)
-        (*i)++;
-    if(lex->type == 9)
+    else //(lex->type == 9)
     {
-        if(init_heredoc(lex, shell))
-            return (1);
+        if(lex->type == 9 && lex->next && lex->next->type == 1)
+            if(!init_heredoc(lex->next, shell))
+                return (0);
+        if(lex->next)
+            type_check(lex->next, i, shell);
+        else
+            printf("Minishell: syntax error near unexpected token `newline\'\n");
+        return (1);
     }
     return (0);
 }
@@ -1725,21 +1769,23 @@ char	*ft_strjoin_heredoc(char const *s1, char const *s2)
 	return (new);
 }
 
-int heredoc_filler(char *end, int pipefd)
+char *heredoc_filler(char *end)
 {
     char *buf;
+    char *heredoc;
+	heredoc = NULL;
 
     buf = (char*)readline("heredoc> ");
+
     while(ft_strncmp(end, buf ,ft_strlen(end)) != 0)
     {   
-        write(pipefd, buf, ft_strlen_heredoc(buf));
-        write(pipefd, "\n", 1);
+        if(buf == NULL)
+            return (NULL);
+        heredoc = ft_strjoin_heredoc(heredoc, buf);
         free(buf);
         buf = (char*)readline("heredoc> ");
     }
-    free(buf);
-    //Error manager missing
-    return (0); 
+    return (heredoc);
 }
 
 // t_herepipe  ft_lastpipe(t_herepipe *pipe)
@@ -1768,11 +1814,43 @@ void  ft_pipeaddback(t_shell **shell, t_herepipe *new)
 }
 
 
+// int init_heredoc(t_lexer *lex, t_shell **shell)
+// {
+//     char *eof;
+//     int err;
+//     int pipefd[2];
+//     t_herepipe *temp;
+
+//     temp = malloc(sizeof(*temp));
+//     if(!temp)
+//     {
+//     //printf("Minishell: malloc failed\n");
+//         return (1);
+//     }
+//     if(pipe(pipefd) == -1)
+//     {
+//     //printf("Minishell: pipe failed\n");
+//         return (1);
+//     }
+//     eof = lex->next->heredoc;
+//     err = heredoc_filler(eof, pipefd[1]);
+//     if(err)
+//     {
+//     //printf("Minishell: syntax error near unexpected token `newline\'\n");
+//         return (1);
+//     }
+//     close(pipefd[1]);
+//     temp->stored = 0;
+//     temp->fd = pipefd[0];
+//     temp->next = NULL;
+//     ft_pipeaddback(shell, temp);
+//     return (0);
+// }
+
+
 int init_heredoc(t_lexer *lex, t_shell **shell)
 {
     char *eof;
-    int err;
-    int pipefd[2];
     t_herepipe *temp;
 
     temp = malloc(sizeof(*temp));
@@ -1781,21 +1859,14 @@ int init_heredoc(t_lexer *lex, t_shell **shell)
     //printf("Minishell: malloc failed\n");
         return (1);
     }
-    if(pipe(pipefd) == -1)
-    {
-    //printf("Minishell: pipe failed\n");
-        return (1);
-    }
-    eof = lex->next->heredoc;
-    err = heredoc_filler(eof, pipefd[1]);
-    if(err)
+    eof = lex->heredoc;
+    temp->str = heredoc_filler(eof);
+    if(!temp->str)
     {
     //printf("Minishell: syntax error near unexpected token `newline\'\n");
         return (1);
     }
-    close(pipefd[1]);
     temp->stored = 0;
-    temp->fd = pipefd[0];
     temp->next = NULL;
     ft_pipeaddback(shell, temp);
     return (0);
@@ -1816,15 +1887,23 @@ int type_check(t_lexer *lex, int *i, t_shell **shell)
     {
         if(prev_check(lex, "-145678"))
         {
-            printf("Minishell: syntax error near unexpected token `newline'\n");
+            printf("Minishell: syntax error near unexpected token `<'\n");
             return (1);
         }    
     }
-    else if(lex->type == 3) // > >>
+    else if(lex->type == 0) // > >> A RAJOUTER >>
     {
         if(prev_check(lex, "-145678"))
         {
-            printf("Minishell: syntax error near unexpected token `newline'\n");
+            printf("Minishell: syntax error near unexpected token `>>'\n");
+            return (1);
+        }
+    }
+    else if(lex->type == 3) // > >> A RAJOUTER >>
+    {
+        if(prev_check(lex, "-145678"))
+        {
+            printf("Minishell: syntax error near unexpected token `>'\n");
             return (1);
         }
     }
@@ -1871,7 +1950,7 @@ int type_check(t_lexer *lex, int *i, t_shell **shell)
     }
     else if(lex->type == 9) // <<
     {
-        if(prev_check(lex, "-145678")) // pas sur la?????
+        if(prev_check(lex, "-145678") || next_check(lex, "1")) // pas sur la?????
         {
             printf("Minishell: syntax error near unexpected token `<<\'\n");
             return (1);
@@ -1902,6 +1981,7 @@ int lexing_check(t_shell **shell, t_lexer *lexer)
     lex = lex->next;
     while(lex)
     {
+        printf("\n\nICI\n\n");
         if(type_check(lex, &i, shell))
             return (1);
         if(lex->next == NULL)
@@ -1910,6 +1990,7 @@ int lexing_check(t_shell **shell, t_lexer *lexer)
         lex = lex->next;
         if(i < 0)
         {
+            printf("Je rentre ici??\n");
             printf("Minishell: syntax error near unexpected token `)\'\n");
             return (1);
         }
@@ -1940,6 +2021,7 @@ void free_lexer(t_lexer *lexer)
 
 }
 
+
 void print_cmd(t_cmd *cmd, int indent);
 
 void print_indent(int indent) {
@@ -1960,6 +2042,7 @@ void print_redircmd(t_redircmd *redir, int indent) {
     print_indent(indent + 1);
     printf("FD: %d\n", redir->fd);
     print_cmd(redir->cmd, indent + 1);
+    printf("STR: %s", redir->heredoc);
 }
 
 void print_execcmd(t_execcmd *exec, int indent) {
