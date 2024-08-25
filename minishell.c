@@ -2121,27 +2121,27 @@ void print_cmd(t_cmd *cmd, int indent) {
     }
 }
 
-int main(int ac, char **av, char **env)
-{
-    t_cmd *tree;
-    t_lexer *lex;
-    t_shell *shell;
+// int main(int ac, char **av, char **env)
+// {
+//     t_cmd *tree;
+//     t_lexer *lex;
+//     t_shell *shell;
 
-    shell = malloc(sizeof(t_shell));
-    ft_bzero(shell, sizeof(t_shell));
-    char *copy;
+//     shell = malloc(sizeof(t_shell));
+//     ft_bzero(shell, sizeof(t_shell));
+//     char *copy;
 
-    copy = strdup(av[1]);
-    parsecmd(&shell, copy);
-    // {
-    print_cmd(shell->tree, 0);
-    free(copy);
-    free(shell);
-    //     // tree_free(&shell->tree);
-    //     // free(copy);
-    //     return (0);
-    // }
-    // free(copy);
-    // ft_exec(tree, env);
-    return (1);
-}
+//     copy = strdup(av[1]);
+//     parsecmd(&shell, copy);
+//     // {
+//     print_cmd(shell->tree, 0);
+//     free(copy);
+//     free(shell);
+//     //     // tree_free(&shell->tree);
+//     //     // free(copy);
+//     //     return (0);
+//     // }
+//     // free(copy);
+//     // ft_exec(tree, env);
+//     return (1);
+// }

@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/22 12:40:04 by dakojic           #+#    #+#             */
-/*   Updated: 2024/08/13 12:46:03 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/08/25 16:52:11 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,54 +15,60 @@
 // Takes pointer to execcmd struct as arg since its the end product and frees it
 // Echo always returns 0 unless write fails
 
-// Fix  -nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn, only bunch of Ns
-// Fix  -nnnnnEEEEE , bunch of Ns but some random chars also
-int n_option(t_execcmd **cmd, int *i, bool *arg)
+
+int n_option(char **cmd, int *i, bool *arg)
 {
-    while(ft_strcmp((*cmd)->args[++(*i)],"-n") == 0)
+    int j;
+
+    j = 2;
+    while(cmd[*i] && cmd[*i][0]== '-' && cmd[*i][1] == 'n')
     {
-        if((*cmd)->args[*i + 1] == NULL) // If -n is the only argument
-        {
-            free(*cmd);
-            return 1;
-        }
-        if(*arg == false)
+        while(cmd[*i][j] == 'n')
+            j++;
+        if(cmd[*i][j] == '\0')
             *arg = true;
+        else
+            return (0);
+        (*i)++;
+        j = 2;
     }
     return (0);
 }
-int ft_echo(t_execcmd **cmd)
+int ft_echo(char ***cmd)
 {
     int i;
     bool n_arg;
 
-    i = 0;
+    i = 1;
     n_arg = false;
-    if(n_option(cmd, &i, &n_arg) == 1)
-        return (0);
-    while((*cmd)->args[i])
+    n_option(*cmd, &i, &n_arg);
+    while((*cmd)[i])
     {
-        write(1, (*cmd)->args[i], ft_strlen((*cmd)->args[i]));
-        if((*cmd)->args[i + 1] != 0)
+        write(1, (*cmd)[i], ft_strlen((*cmd)[i]));
+        if((*cmd)[i + 1] != 0)
             write(1, " ", 1);
         i++;
     }
     if(n_arg == false)
         write(1, "\n", 1);
-    return (free((*cmd)), 0);
+    i = 0;
+    while((*cmd)[i])
+        free((*cmd)[i++]);
+    free(*cmd);
+    *cmd = NULL;
+    return (0);
 }
-int main()
-{
-    t_execcmd *cmd;
-    cmd = malloc(sizeof(t_execcmd));
-    char *bla = malloc(sizeof(char) * 5);
-    bla = "echo";
-    cmd->args[0] = bla;
-    cmd->args[1] = "-nm";
-    cmd->args[2] = "ho";
-    cmd->args[3] = "Hello";
-    cmd->args[4] = NULL;
-    ft_echo(&cmd);
-    ft_echo(&cmd);
-    return 0;
-}
+// int main()
+// {
+//     char **cmd = malloc(5 * sizeof(char *));
+//     if (!cmd) return 1;
+
+//     cmd[0] = strdup("echo"); // Use strdup to duplicate string literals safely
+//     cmd[1] = strdup("-nABCn");
+//     cmd[2] = strdup("-n");
+//     cmd[3] = strdup("World");
+//     cmd[4] = NULL;
+//     ft_echo(&cmd);
+//     // ft_echo(&cmd);
+//     return 0;
+// }
