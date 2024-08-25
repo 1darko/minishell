@@ -1553,8 +1553,9 @@ int lexer(t_shell **shell, char *str)
     int i = 0;
     t_lexer *lexer;
 
-    lexer = malloc(sizeof(lexer));
-    ft_bzero(&lexer, sizeof(lexer));
+    lexer = ft_calloc(1, sizeof(*lexer));
+    // lexer = malloc(sizeof(*lexer));
+    // ft_bzero(lexer, sizeof(*lexer));
     while (str[i])
     {
         while (str[i] && ft_strchr(" \t\n\r\v", str[i]))
@@ -1642,10 +1643,8 @@ int prev_check(t_lexer *lex, char *str)
         return (1);
     while(str[i])
     {   
-    //printf("prev : %c\n", lex->prev->type);
         if(lex->prev == NULL)
         {
-        //printf("\n\nici ca bug\n\n");
             if(str[i] == '-')
                 return (0);
             else
@@ -1876,9 +1875,9 @@ int type_check(t_lexer *lex, int *i, t_shell **shell)
 
     if(lex->type == 1)
     { // WORD 
-        if(prev_check(lex, "-12345689"))
+        if(prev_check(lex, "-012345689"))
         {
-            printf("Lexer : sytax error\n");
+            printf("Lexer : syntax error\n");
             return (1);
         }
     }
@@ -1890,7 +1889,7 @@ int type_check(t_lexer *lex, int *i, t_shell **shell)
             return (1);
         }    
     }
-    else if(lex->type == 0) // > >> A RAJOUTER >>
+    else if(lex->type == 0) // >>
     {
         if(prev_check(lex, "-145678"))
         {
@@ -1898,7 +1897,7 @@ int type_check(t_lexer *lex, int *i, t_shell **shell)
             return (1);
         }
     }
-    else if(lex->type == 3) // > >> A RAJOUTER >>
+    else if(lex->type == 3) // >
     {
         if(prev_check(lex, "-145678"))
         {
@@ -1962,7 +1961,7 @@ int last_type_check(int lex)
 {
     if(lex != 1 && lex != 7)
     {
-        printf("Minishell: syntax error near unexpected token `newline\'\n");
+        printf("Minishell: syntax error near unexpected tokenEEEEEEEEEee `newline\'\n");
         return (1);
     }
     return (0);
@@ -1983,8 +1982,8 @@ int lexing_check(t_shell **shell, t_lexer *lexer)
         if(type_check(lex, &i, shell))
             return (1);
         if(lex->next == NULL)
-            if(last_type_check(lex->type))
-                return (1);   
+            if(last_type_check(lex->type)){printf("JE RENTRE ICI\n");
+                return (1);   }
         lex = lex->next;
         if(i < 0)
         {
@@ -2003,20 +2002,16 @@ void free_lexer(t_lexer *lexer)
 {
     t_lexer *lex;
 
-    lex = lexer;
-    while(lexer->next)
+    while (lexer)
     {
         lex = lexer->next;
-        if(lexer->heredoc)
+        if (lexer->heredoc)
             free(lexer->heredoc);
         free(lexer);
         lexer = lex;
     }
-    if(lexer->heredoc)
-        free(lexer->heredoc);    
-    free(lexer);
-
 }
+
 
 
 void print_cmd(t_cmd *cmd, int indent);
@@ -2153,6 +2148,8 @@ int main(int ac, char **av, char **env)
     parsecmd(&shell, copy);
     // {
     print_cmd(shell->tree, 0);
+    free(copy);
+    free(shell);
     //     // tree_free(&shell->tree);
     //     // free(copy);
     //     return (0);
