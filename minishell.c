@@ -1544,7 +1544,6 @@ int add_lex_node(t_lexer **lex, char *str, int *i)
     new->prev = NULL;
 //printf("before : %s\n", str + before);
     new->heredoc = ft_strdup_lex(str + before, size);
-    printf("heredoc : %s\n", new->heredoc);
     ft_lstadd_back(lex, &new);
     return 0;
 }
@@ -1981,7 +1980,6 @@ int lexing_check(t_shell **shell, t_lexer *lexer)
     lex = lex->next;
     while(lex)
     {
-        printf("\n\nICI\n\n");
         if(type_check(lex, &i, shell))
             return (1);
         if(lex->next == NULL)
@@ -1990,7 +1988,6 @@ int lexing_check(t_shell **shell, t_lexer *lexer)
         lex = lex->next;
         if(i < 0)
         {
-            printf("Je rentre ici??\n");
             printf("Minishell: syntax error near unexpected token `)\'\n");
             return (1);
         }
