@@ -10,15 +10,6 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
-// #define EXEC 1
-// #define REDIR 2
-// #define PIPE 3
-// #define BLOC 4
-// #define AND 5
-// #define OR 6
-// #define HERE 7
-// #define EMPTY 8
-
 
 #define MAXARGS 50
 #define MAXLINE 1500001
@@ -77,14 +68,6 @@ typedef struct s_shell
     t_herepipe *pipe;
 }   t_shell;
 
-// typedef struct s_execcmd
-// {
-//     int type;
-//     int quoted; // 0 = no, 1 = simple, 2 = double
-//     int space;
-//     char *arg;
-//     struct s_execcmd *next;
-// }   t_execcmd;
 
 typedef struct s_execcmd
 {
@@ -430,6 +413,8 @@ t_cmd *redircmd_out(t_cmd *cmd, char *file, char *efile, int fd)
     t_redircmd *redir;
 
     redir = malloc(sizeof(*redir));
+    if(!redir)
+        return (NULL);
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->cmd = cmd;
@@ -445,6 +430,8 @@ t_cmd *redircmd_in(t_cmd *cmd, char *file, char *efile, int fd)
     t_redircmd *redir;
 
     redir = malloc(sizeof(*redir));
+    if(!redir)
+        return (NULL);
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->cmd = cmd;
@@ -463,6 +450,8 @@ t_cmd *redircmd_in2(t_cmd *cmd, char *file, char *efile, int fd)
 
     temp = (t_redircmd *)((t_redircmd *)cmd)->cmd;
     redir = malloc(sizeof(*redir));
+    if(!redir)
+        return (NULL);
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->file = ft_filecpy(file, efile);
@@ -480,6 +469,8 @@ t_cmd *redircmd_append(t_cmd *cmd, char *file, char *efile, int fd)
 {
     t_redircmd *redir;
     redir = malloc(sizeof(*redir));
+    if(!redir)
+        return (NULL);
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->cmd = cmd;
@@ -495,6 +486,8 @@ t_cmd *redircmd_out2(t_cmd *cmd, char *file, char *efile, int fd)
     t_redircmd *redir;
 
     redir = malloc(sizeof(*redir));
+    if(!redir)
+        return (NULL);
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->file = ft_filecpy(file, efile);
@@ -514,6 +507,8 @@ t_cmd *redircmd_append2(t_cmd *cmd, char *file, char *efile, int fd)
 
     temp = (t_redircmd *)((t_redircmd *)cmd)->cmd;
     redir = malloc(sizeof(*redir));
+    if(!redir)
+        return (NULL);
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->file = file;
@@ -551,7 +546,7 @@ t_cmd *redircmd_here(t_herepipe **pipe, t_cmd *cmd)
 
     redir = malloc(sizeof(*redir));
     if(!redir)
-        problem("malloc failed");
+        return (NULL);
     ft_bzero(redir, sizeof(*redir));
     redir->type = HERE;
     redir->cmd = cmd;
@@ -833,12 +828,11 @@ char *ft_strdup_arg(char *start, char *end)
 
     i = 0;
     size = 0;
-
     while((start + size) != end && start[size] != '\0')
         size++;
     copy = malloc(sizeof(char) * (size + 1));
     if(!copy)
-        problem("malloc failed");
+        return (NULL);
     while(i != size)
     {
         copy[i] = start[i];
@@ -988,8 +982,6 @@ void nulterminator(t_cmd *cmd)
     }
     else if(cmd->type == REDIR)
         nulredir(cmd);
-    // else if(cmd->type == EXEC)
-    //     nulargs(cmd);   
     if(cmd->type == OR)
     {
         nulterminator((t_cmd *)((t_orcmd *)cmd)->left);
@@ -1030,8 +1022,6 @@ int checkblock(const char *str)
             return (printf("Minishell:syntax error near unexpected token`)\'\n"), 1);   
         i++;
     }
-    if(j > 0)
-    //printf("Minishell: syntax error near unexpected token`(\'\n");
     if(j != 0)
         return (1);
     return (0);
@@ -1084,9 +1074,6 @@ void *parsecmd(t_shell **shell, char *str)
     if(lexer(shell, str))
         return (NULL);
     (*shell)->tree = parseline(*shell, &str);  
-    if(*str)      // A enlever a la fin FPRINTF pour debug
-        fprintf(stderr, "leftover data: %s\n", str);
-    // nulterminator((*shell)->tree);
     emptyswitch((*shell)->tree);
     return (0);    
 }
