@@ -44,7 +44,7 @@
 // 	}
 // 	free(s);
 // 	return ;
-}
+// }
 
 
 static char **unset_env(char **str, int skip)
@@ -85,7 +85,6 @@ static int envcheck(char *path, char *env, int size)
     if(size != i || env[i] != '=' || path[i] != '\0')
         return(1);
     return (0);
-
 }
 
 void ft_unset(char **cmd, char ***env)
