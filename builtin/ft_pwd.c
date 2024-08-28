@@ -11,28 +11,42 @@
 /* ************************************************************************** */
 
 #include "../minishell.h"
+#include <unistd.h>
 
-void	ft_pwd(t_execcmd **cmd)
+// void	free_array(char **s)
+// {
+// 	int	i;
+
+// 	i = 0;
+// 	while (s[i])
+// 	{
+// 		free(s[i]);
+// 		i++;
+// 	}
+// 	free(s);
+// 	return ;
+// }
+void	ft_pwd(char **cmd)
 {
     char	*pwd;
-
-    free(*cmd);    
+    free_array(cmd);
     pwd = getcwd(NULL, 0);
     if(!pwd)
     {
-        write(1, "Error: getcwd failed\n", 22);
+        write(1, "Minishell: error: getcwd failed\n", 22);
         return ;
     }
-    if(write(4, pwd, strlen(pwd)) < 0 || write(1, "\n", 1) < 0)
+    if(write(1, pwd, strlen(pwd)) < 0 || write(1, "\n", 1) < 0)
         write(1, "Error: write failed\n", 21);
     free(pwd);
 }
 // int main()
 // {
-//     t_execcmd *cmd;
-//     cmd = malloc(sizeof(t_execcmd));
-//     cmd->args[0] = "pwd";
-//     cmd->args[1] = NULL;
-//     ft_pwd(&cmd);
+//     char **cmd;
+//     cmd = (char **)malloc(sizeof(char *) * 3);
+//     cmd[0] = strdup("DUMDUM");
+//     cmd[1] = strdup("PATH");
+//     cmd[2] = NULL;
+//     ft_pwd(cmd);
 //     return (0);
 // }
