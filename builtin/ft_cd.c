@@ -36,6 +36,34 @@ size_t	ft_strlen(const char *str)
 	return (i);
 }
 
+char	*ft_strjoin(char const *s1, char const *s2)
+{
+	size_t	len;
+	size_t	cur;
+	size_t	i;
+	char	*new;
+
+	cur = 0;
+	i = 0;
+	if (!s1 || !s2)
+		return (NULL);
+	len = ft_strlen(s1) + ft_strlen(s2);
+	new = (char *)malloc(sizeof (char) * len + 1);
+	if (!new)
+		return (NULL);
+	while (s1[cur] != '\0')
+	{
+		new[cur] = s1[cur];
+		cur++;
+	}
+	while (s2[i] != '\0')
+	{
+		new[cur++] = s2[i++];
+	}
+	new[cur] = '\0';
+	return (new);
+}
+
 void	*ft_calloc(size_t nmemb, size_t size)
 {
 	size_t				i;
@@ -91,7 +119,7 @@ int	ft_strcmp2(const char *s1, const char *s2)
     return (1);
 }
 
-static char	*ft_substr(char const *s, unsigned int start, size_t len)
+char	*ft_substr(char const *s, unsigned int start, size_t len)
 {
 	size_t	i;
 	size_t	j;
@@ -143,7 +171,7 @@ char	*get_env(char *name, char **env)
 	}
 	return (NULL);
 }
-int size_pwd(char **env)
+static int size_pwd(char **env)
 {
     int i;
 
@@ -156,39 +184,113 @@ int size_pwd(char **env)
     }
     return (ft_strlen(env[i]));
 }
-void    ft_cd(char **cmd, char **env) //Update PWD et OLDPWD a chaque move
+
+static void	ft_getcwd(char **pwd, int size)
+{
+	*pwd = malloc(sizeof(char) * (size + 1));
+	getcwd(*pwd, size + 1);
+	return ;
+}
+
+static int ft_move(char **cmd, char **env)
+{
+	if(cmd[0] && (cmd[1] == NULL || !ft_strcmp(cmd[1], "~") || !ft_strcmp(cmd[1], "--")))
+        chdir(get_env("HOME", env));
+    else if(cmd[0] && !ft_strcmp(cmd[1], "-"))
+	{	
+        chdir(get_env("OLDPWD", env));
+		printf("%s\n", get_env("OLDPWD", env));
+	}
+	else if(cmd[0] && cmd[1])
+		if(chdir(cmd[1]) != 0)
+		{
+			printf("cd: %s: No such file or directory\n", cmd[1]);
+			free_array(cmd);
+			return (1);
+		}
+	free_array(cmd);
+	return (0);
+}
+char	*ft_strdup(const char *s)
+{
+	size_t	len;
+	size_t	cur;
+	char	*dup;
+
+	cur = 0;
+	len = ft_strlen((char *)s);
+	dup = (char *)malloc(sizeof(char) * len + 1);
+	if (dup == 0)
+		return (NULL);
+	while (s[cur] != '\0')
+	{
+		dup[cur] = s[cur];
+		cur++;
+	}
+	dup[cur] = '\0';
+	return (dup);
+}
+
+static void ft_switch_pwd(char *newpwd, char *oldpwd, char ***env)
+{
+	int i;
+	int j;
+	char *tmp;
+
+	i = -1;
+	while((*env)[++i])
+	{
+		j = 0;
+		while((*env)[i][j] && (*env)[i][j] != '=')
+			j++;
+		tmp = ft_substr((*env)[i], 0, j);
+		if(!ft_strcmp2(tmp, "PWD"))
+		{
+			free((*env)[i]);
+			(*env)[i] = ft_strdup("PWD=");
+			(*env)[i] = ft_strjoin((*env)[i], newpwd);
+		}
+		if(!ft_strcmp2(tmp, "OLDPWD"))
+		{
+			free((*env)[i]);
+			(*env)[i] = ft_strdup("OLDPWD=");
+			(*env)[i] = ft_strjoin((*env)[i], oldpwd);
+		}
+		free(tmp);
+	}
+}
+
+void    ft_cd(char **cmd, char **env)
 {
     char *oldpwd;
     char *newpwd;
-
-    oldpwd = malloc(sizeof(char) * (size_pwd(env) + 1));
-    getcwd(oldpwd, size_pwd(env) + 1); // Goes on OLDPWD
-
-    if(cmd[0] && (cmd[1] == NULL || !ft_strcmp(cmd[1], "~") || !ft_strcmp(cmd[1], "--")))
-        chdir(get_env("HOME", env));
-    if(cmd[0] && !ft_strcmp(cmd[1], "-"))
-        chdir(get_env("OLDPWD", env));
-    
-    newpwd = malloc(sizeof(char) * (size_pwd(env) + 1));
-    getcwd(newpwd, size_pwd(env) + 1); // Ca devient PWD
-
-    free_array(cmd);
+	int check;
+	ft_getcwd(&oldpwd, size_pwd(env));
+	if(ft_move(cmd, env) == 1)
+	{
+		free(oldpwd);
+		return ;
+	}
+	ft_getcwd(&newpwd, size_pwd(env));
+    ft_switch_pwd(newpwd, oldpwd, &env);
+	free(oldpwd);
+	free(newpwd);
     return ;
 }
 
-int main(int ac, char **av, char **env)
-{
-    (void)ac;
-    (void)av;
+// int main(int ac, char **av, char **env)
+// {
+//     (void)ac;
+//     (void)av;
   
-    char s[100]; 
+//     char s[100]; 
 
-    char **str = malloc(sizeof(char *) *3);
-    str[0] = strdup("cd");
-    str[1] = strdup("-");
-    str[2] = NULL;
+//     char **str = malloc(sizeof(char *) *3);
+//     str[0] = strdup("cd");
+//     str[1] = strdup("/home/dakojic/code");
+//     str[2] = NULL;
 
-    ft_cd(str, env);
+//     ft_cd(str, env);
 
-    return (0);
-}
+//     return (0);
+// }
