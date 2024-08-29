@@ -265,6 +265,13 @@ void    ft_cd(char **cmd, char **env)
     char *oldpwd;
     char *newpwd;
 	int check;
+
+	if(cmd[2])
+	{
+		printf("Minishell: cd: too many arguments\n"); /// Changer le errno a 1???
+		free_array(cmd);
+		return ;
+	}
 	ft_getcwd(&oldpwd, size_pwd(env));
 	if(ft_move(cmd, env) == 1)
 	{
