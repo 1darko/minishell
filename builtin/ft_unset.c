@@ -140,36 +140,36 @@ void ft_unset(char ***cmd, char ***env)
     free((*cmd));
 }
 
-int main()
-{
-    char **env;
-    char **cmd;
-    int i = 0;
-    env = (char **)malloc(sizeof(char *) * 5);
-    env[0] = strdup("OPREM=/RADOVAN/sbin:/sbin");
-    env[1] = strdup("DUMDU=/BOMBOUM           I WANT YOU IN MY ROOM");
-    env[2] = strdup("DUMDUM=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin");
-    env[3] = strdup("PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin");
-    env[4] = NULL;
-    while(env[i])
-    {
-        printf("Env[%d] : %s\n", i, env[i]);
-        i++;
-    }
-    cmd = (char **)malloc(sizeof(char *) * 4);
-    cmd[0] = strdup("DUMDUM");
-    cmd[1] = strdup("DUMDUM");
-    cmd[2] = strdup("PATH");
-    cmd[3] = NULL;
-    ft_unset(&cmd, &env);
-    i = 0;
+// int main()
+// {
+//     char **env;
+//     char **cmd;
+//     int i = 0;
+//     env = (char **)malloc(sizeof(char *) * 5);
+//     env[0] = strdup("OPREM=/RADOVAN/sbin:/sbin");
+//     env[1] = strdup("DUMDU=/BOMBOUM           I WANT YOU IN MY ROOM");
+//     env[2] = strdup("DUMDUM=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin");
+//     env[3] = strdup("PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin");
+//     env[4] = NULL;
+//     while(env[i])
+//     {
+//         printf("Env[%d] : %s\n", i, env[i]);
+//         i++;
+//     }
+//     cmd = (char **)malloc(sizeof(char *) * 4);
+//     cmd[0] = strdup("DUMDUM");
+//     cmd[1] = strdup("DUMDUM");
+//     cmd[2] = strdup("PATH");
+//     cmd[3] = NULL;
+//     ft_unset(&cmd, &env);
+//     i = 0;
 
-    while(env[i])
-    {
-        printf("Env[%d] : %s\n", i, env[i]);
-        i++;
-    }
-    free_array(env);
+//     while(env[i])
+//     {
+//         printf("Env[%d] : %s\n", i, env[i]);
+//         i++;
+//     }
+//     free_array(env);
 
-    return 0;
-}
+//     return 0;
+// }
