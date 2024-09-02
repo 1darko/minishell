@@ -1,48 +1,17 @@
-#include "../minishell.h"
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-// export with no options
 
-// char **bla;
-// bla[0] = "export";
-// bla[1] = "a=b";
-// bla[2] = NULL;
 
-// export with -p option
-// char **bla;
-// bla[0] = "export";
-// bla[1] = "-p";
-// bla[2] = a;
-// bla[3] = NULL;
-
-// export with -n option
-// ft_unset(bla, &env);
-
-// NEED TO FIX THE ADD ENV BLA BLA BLA, NOT WORKING RN IN ANYWAY SHAPE OR FORM
-// NOTHING
-
-int ft_strlen(const char *s)
+int ft_strlen(char *s)
 {
     int i;
 
     i = 0;
-    while(s[i])
+    while(s[i] != '\0')
         i++;
     return (i);
-}
-
-int	ft_strcmp(const char *s1, const char *s2)
-{
-	unsigned char	*s3;
-	unsigned char	*s4;
-
-	s3 = (unsigned char *)s1;
-	s4 = (unsigned char *)s2;
-	while (*s3 == *s4 && *s3 != '\0')
-	{
-		++s3;
-		++s4;
-	}
-	return (*s3 - *s4);
 }
 
 char	*ft_strdup(const char *s)
@@ -65,6 +34,88 @@ char	*ft_strdup(const char *s)
 	return (dup);
 }
 
+
+
+int	ft_strncmp(const char *s1, const char *s2, size_t n)
+{
+	unsigned char	*s3;
+	unsigned char	*s4;
+	size_t			cur;
+
+	cur = 0;
+	s3 = (unsigned char *) s1;
+	s4 = (unsigned char *) s2;
+	if (n == 0)
+		return (0);
+	while (cur < n && s3[cur] != '\0' && s4[cur] != '\0')
+	{
+		if (s3[cur] != s4[cur])
+			return (s3[cur] - s4[cur]);
+		cur++;
+	}
+	if (cur == n)
+		return (0);
+	return (s3[cur] - s4[cur]);
+}
+
+
+char *minisplit(char *s, int c)
+{
+    char *new;
+    int i;
+
+    i = 0;
+    while(s[i] && s[i] != (char)c)
+        i++;
+    if(s[i] == '\0')
+        return (NULL);
+    new = (char *)malloc(sizeof(char) * (i + 1));
+    i = 0;
+    while(s[i] != c)
+    {
+        new[i] = s[i];
+        i++;
+    }
+    new[i] = '\0';
+    return (new);
+}
+
+char **new_env(char ***env, char *cmd)
+{
+    char **new;
+    int i;
+    int j;
+
+    i = 0;
+    while((*env)[i] != NULL)
+        i++;
+    new = (char **)malloc(sizeof(char *) * (i + 2));
+    i = 0;
+    while((*env)[i] != NULL)
+    {
+        new[i] = ft_strdup((*env)[i]);
+        free((*env)[i]);
+        i++;
+    }
+    new[i] = ft_strdup(cmd);
+    new[i + 1] = NULL;
+    free(*env);
+    return (new);
+}
+
+
+void print_env(char **env)
+{
+    int i;
+
+    i = 0;
+    while(env[i] != NULL)
+    {
+        printf("declare -x %s\n", env[i]);
+        i++;
+    }
+    return ;
+}
 void	free_array(char **s)
 {
 	int	i;
@@ -72,7 +123,6 @@ void	free_array(char **s)
 	i = 0;
 	while (s[i])
 	{
-        printf("On essaie de free %s\n", s[i]);
 		free(s[i]);
 		i++;
 	}
@@ -80,225 +130,97 @@ void	free_array(char **s)
 	return ;
 }
 
-
-static char **unset_env(char ***str, int skip)
+int	ft_isalpha(int c)
 {
-    char **copy;
+	return ((c >= 65 && c <= 90) || (c >= 97 && c <= 122));
+}
+
+void ft_export2(char ***cmd, char ***env)
+{
+    char *lf;
     int i;
     int j;
 
-    i = 0;
-    j = 0;
-    while ((*str)[i])
-        i++;
-    copy = malloc(sizeof(char *) * i);
-    if (!copy)
-        return (NULL);
-    i = 0;
-    while ((*str)[i])
+    i = 1;
+    while(!ft_strncmp((*cmd)[i], "-p", ft_strlen((*cmd)[i])) && (*cmd)[i + 1] != NULL)
+       i++;
+    while((*cmd)[i] != NULL)
     {
-        if (skip == i)
+        if(!ft_isalpha((*cmd)[i][0]))
         {
+            printf("Minishell: export: `%s': not a valid identifier\n", (*cmd)[i]);
             i++;
             continue;
         }
-        copy[j++] = ft_strdup((*str)[i++]);
-    }
-    copy[j] = NULL;
-    return (copy);
-}
-
-
-static int envcheck(char *path, char *env, int size)
-{
-    int i;
-
-    i = 0;
-    while(env[i] && path[i] && env[i] == path[i])
-        i++;
-    if(size != i || env[i] != '=' || path[i] != '\0')
-        return(1);
-    return (0);
-}
-void ft_unset2(char ***cmd, char ***env, int j)
-{   
-    int i;
-    int size;
-    char **cpy;
-
-    while((*cmd)[++j])
-    {
-        i = -1;
-        size = ft_strlen((*cmd)[j]);
-        while((*env)[++i])  
-            if(!envcheck((*cmd)[j], (*env)[i], size))
+        lf = minisplit((*cmd)[i], '=');
+        if(lf == NULL && i++)
+            continue;
+        j = 0;
+        while((*env)[j] != NULL)
+        {
+            if(!ft_strncmp(lf, (*env)[j], ft_strlen(lf)))
             {
-                size = -1;
+                free((*env)[j]);
+                (*env)[j] = ft_strdup((*cmd)[i]);
                 break;
             }
-        if((*env)[i] == NULL && (*cmd)[j + 1] == NULL)
-            return (free_array(*cmd));
-        if(size == -1)
-        {
-            cpy = unset_env(env, i);
-            free_array(*env);
-            *env = cpy;
-            free((*cmd)[j]);
+            j++;
         }
+        if((*env)[j] == NULL)
+            *env = new_env(env, (*cmd)[i]);
+        i++;
+        free(lf);
     }
 }
-void ft_unset(char ***cmd, char ***env)
-{
-    int j;
-
-    j = 0;
-    if((*cmd)[1] == NULL)
-        return(free_array(*cmd));
-    free((*cmd)[0]);
-    ft_unset2(cmd, env, j);
-    free((*cmd));
-}
-
-////////////////////////////////////////////
-
-// char	*ft_strdup(const char *s)
-// {
-// 	size_t	len;
-// 	size_t	cur;
-// 	char	*dup;
-
-// 	cur = 0;
-// 	len = ft_strlen((char *)s);
-// 	dup = (char *)malloc(sizeof(char) * len + 1);
-// 	if (dup == 0)
-// 		return (NULL);
-// 	while (s[cur] != '\0')
-// 	{
-// 		dup[cur] = s[cur];
-// 		cur++;
-// 	}
-// 	dup[cur] = '\0';
-// 	return (dup);
-// }
-
-static int envcheck_export(char *path, char *env, int size)
-{
-    int i;
-
-    i = 0;
-    while(env[i] && path[i] && env[i] == path[i] && i < size)
-        i++;
-    if(env[i] == '=' && path[i] == '=')
-        return(1);
-    return (0);
-}
-void print_env(char **env)
-{
-    int i;
-
-    i = -1;
-    while(env[++i])
-        printf("declare -x %s\n", env[i]);
-}
-
-void add_env(char ***env, char *cmd)
-{
-    int i;
-    char **cpy;
-
-    i = 0;
-    while((*env)[i])
-        i++;
-    cpy = malloc(sizeof(char *) * (i + 2));
-    i = -1;
-    while((*env)[++i])
-        cpy[i] = ft_strdup((*env)[i]);
-    cpy[i] = ft_strdup(cmd);
-    cpy[i + 1] = NULL;
-    free_array(*env);
-    *env = cpy;
-}
-
-void replace_env(char ***env, char ***cmd, int i, int j)
-{   
-    int y;
-    int size;
-    char **cpy;
-    
-    y = 0;
-    size = 0;
-    while((*env)[size])
-        size++;
-    cpy = malloc(sizeof(char *) * (size + 1));
-    y = -1;
-    while((*env)[++y])
-    {
-        if(y == i)
-        {
-            cpy[y] = ft_strdup((*cmd)[j]);
-            continue;
-        }
-        cpy[y] = ft_strdup((*env)[y]);
-    }
-    cpy[y] = NULL;
-    // free_array(*env);
-    *env = cpy;
-}
-
 void ft_export(char ***cmd, char ***env)
 {
+    char *lf;
     int i;
     int j;
-    int size;
-    char **cpy;
 
-    if(ft_strcmp((*cmd)[1], "-p") == 0)
+    i = 1;
+    while(!ft_strncmp((*cmd)[i], "-p", ft_strlen((*cmd)[i])) && (*cmd)[i + 1] != NULL)
+       i++;
+    if((*cmd)[1] == NULL || (!ft_strncmp((*cmd)[i], "-p", ft_strlen((*cmd)[i])) && (*cmd)[i + 1] == NULL))
+    {   
+        free_array(*cmd);
         print_env(*env);
-    else if(ft_strcmp((*cmd)[1], "-n") == 0){printf("inside this\n");
-        return((free((*cmd)[0] )));ft_unset(cmd + 1, env);}
-    else if((*cmd)[1] == NULL)
-        return(free_array(*cmd));
-    j = 0;
-    while((*cmd)[++j])
-    {
-        i = -1;
-        size = 0;
-        while((*cmd)[j][size] != '=')
-            size++;
-        while((*env)[++i])
-        {
-            if(envcheck_export((*cmd)[j], (*env)[i], size))
-                break;
-        }
-        if((*env)[i] == NULL)
-            add_env(env, (*cmd)[j]);
-        else
-            replace_env(env, cmd, i, j);
+        return ;
     }
+    ft_export2(cmd, env);
+    i = 0;
+    while((*cmd)[i] != NULL)
+    {
+        free((*cmd)[i]);
+        i++;
+    }
+    free(*cmd);
+    print_env(*env);
 }
 
-int main()
-{
-    char **env;
-    char **cmd;
-    int i = 0;
-    env = (char **)malloc(sizeof(char *) * 5);
-    cmd = (char **)malloc(sizeof(char *) * 5);
-    env[0] = "a=1";
-    env[1] = "c=2";
-    env[2] = "e=3";
-    env[3] = "g=4";
-    env[4] = NULL;
-    while(env[i])
-        printf("%s\n", env[i++]);
-    printf("\n");
-    printf("\n");
-    cmd[0] = "export";
-    cmd[1] = "-n";
-    cmd[2] = "a";
-    cmd[3] = NULL;
-    ft_export(&cmd, &env);
-    while(env[i])
-        printf("BLAH %s\n", env[i++]);
-    return 0;
-}
+// #include  <string.h>
+// int main()
+// {
+//     char **env;
+//     char **cmd;
+//     char *line;
+//     int i;
+
+//     i = 0;
+//     env = (char **)malloc(sizeof(char *) * 5);
+//     env[0] = ft_strdup("OPREM=/RADOVAN/sbin:/sbin");
+//     env[1] = ft_strdup("DUMDU=/BOMBOUM           I WANT YOU IN MY ROOM");
+//     env[2] = ft_strdup("DUMDUM=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin");
+//     env[3] = ft_strdup("PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin");
+//     env[4] = NULL;
+//     cmd = (char **)malloc(sizeof(char *) * 5);
+//     cmd[0] = ft_strdup("export");
+//     cmd[1] = ft_strdup("-p");
+//     cmd[2] = ft_strdup("=");
+//     cmd[3] = ft_strdup("BOOM=BOOM");
+//     cmd[4] = NULL;
+//     ft_export(&cmd, &env);
+//     free_array(env);
+
+//     return 0;
+// }
