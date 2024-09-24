@@ -1,3 +1,6 @@
-Add some free after lexer
+Quotes here doc
 
-Builtins
+odd case :
+<< ""
+
+changer args[arg] en char **args et malloc
