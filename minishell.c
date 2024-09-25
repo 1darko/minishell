@@ -69,6 +69,7 @@ typedef struct s_herepipe
 {
     char *str;
     int stored;
+    int quote;
     struct s_herepipe *next;
 } t_herepipe;
 
@@ -85,7 +86,7 @@ typedef struct s_shell
 typedef struct s_execcmd
 {
     int type;
-    char *args[MAXARGS];
+    char **args;
     char *eargs[MAXARGS];
 }   t_execcmd;
 
@@ -410,7 +411,7 @@ char *ft_filecpy(char *file, char *efile)
         i++;
     copy = malloc(sizeof(char) * (i + 1));
     if(!copy)
-        problem("malloc failed");
+        return (NULL);
     i = 0;
     while(file[i] && file[i] != *efile)
     {
@@ -432,6 +433,8 @@ t_cmd *redircmd_out(t_cmd *cmd, char *file, char *efile, int fd)
     redir->type = REDIR;
     redir->cmd = cmd;
     redir->file = ft_filecpy(file, efile);
+    if(!redir->file)
+        return (free(redir) ,NULL);
     redir->mode = O_RDONLY;
     redir->fd = fd;
     return((t_cmd *)redir);
@@ -448,6 +451,8 @@ t_cmd *redircmd_in(t_cmd *cmd, char *file, char *efile, int fd)
     redir->type = REDIR;
     redir->cmd = cmd;
     redir->file = ft_filecpy(file, efile);
+    if(!redir->file)
+        return (free(redir) ,NULL);
     redir->mode = O_WRONLY | O_CREAT | O_TRUNC;
     redir->fd = fd;
     return((t_cmd *)redir);
@@ -463,6 +468,8 @@ t_cmd *redircmd_append(t_cmd *cmd, char *file, char *efile, int fd)
     redir->type = REDIR;
     redir->cmd = cmd;
     redir->file = ft_filecpy(file, efile);
+    if(!redir->file)
+        return (free(redir) ,NULL);
     redir->mode = O_WRONLY | O_CREAT | O_APPEND;
     redir->fd = fd;
     return((t_cmd *)redir);
@@ -481,6 +488,8 @@ t_cmd *redircmd_in2(t_cmd *cmd, char *file, char *efile, int fd)
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->file = ft_filecpy(file, efile);
+    if(!redir->file)
+        return (free(redir) ,NULL);
     redir->mode = O_WRONLY | O_CREAT | O_TRUNC;
     redir->fd = fd;
     redir->cmd = ((t_redircmd *)cmd)->cmd;
@@ -502,6 +511,8 @@ t_cmd *redircmd_out2(t_cmd *cmd, char *file, char *efile, int fd)
     ft_bzero(redir, sizeof(*redir));
     redir->type = REDIR;
     redir->file = ft_filecpy(file, efile);
+    if(!redir->file)
+        return (free(redir) ,NULL);
     redir->mode = O_RDONLY;
     redir->fd = fd;
     redir->cmd = ((t_redircmd *)cmd)->cmd;
@@ -513,9 +524,7 @@ t_cmd *redircmd_out2(t_cmd *cmd, char *file, char *efile, int fd)
 t_cmd *redircmd_append2(t_cmd *cmd, char *file, char *efile, int fd)
 {
     t_redircmd *redir;
-    t_redircmd *temp;
 
-    temp = (t_redircmd *)((t_redircmd *)cmd)->cmd;
     redir = malloc(sizeof(*redir));
     if(!redir)
         return (NULL);
@@ -523,6 +532,8 @@ t_cmd *redircmd_append2(t_cmd *cmd, char *file, char *efile, int fd)
     redir->type = REDIR;
     redir->file = file;
     redir->file = ft_filecpy(file, efile);
+    if(!redir->file)
+        return (free(redir) ,NULL);
     redir->mode = O_WRONLY | O_CREAT | O_APPEND;
     redir->fd = fd;
     redir->cmd = ((t_redircmd *)cmd)->cmd;
@@ -565,6 +576,8 @@ t_cmd *redircmd_here(t_herepipe **pipe, t_cmd *cmd)
     (*pipe)->stored = 1;
     if((*pipe)->str)
         redir->heredoc = ft_strdup((*pipe)->str);
+    if(!redir->heredoc)
+        return (free(redir) ,NULL);
     free((*pipe)->str);
     free(*pipe);
     *pipe = temp;
@@ -590,6 +603,8 @@ t_cmd *redircmd_here2(t_herepipe **pipe, t_cmd *cmd)
     (*pipe)->stored = 1;
     if((*pipe)->str)
         redir->heredoc = ft_strdup((*pipe)->str);
+    if(!redir->heredoc)
+        return (free(redir) ,NULL);    
     free((*pipe)->str);
     free(*pipe);
     *pipe = temp;
@@ -603,6 +618,8 @@ t_cmd *execcmd(void)
     t_execcmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
+    if(!cmd)
+        return(NULL);
     ft_bzero(cmd, sizeof(*cmd));
     cmd->type = EXEC;
     return ((t_cmd *)cmd);
@@ -613,6 +630,8 @@ t_cmd *pipecmd(t_cmd *left, t_cmd *right)
     t_pipecmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
+    if(!cmd)
+        return(NULL);
     ft_bzero(cmd, sizeof(*cmd));
     cmd->type = PIPE;
     cmd->left = left;
@@ -626,6 +645,8 @@ t_cmd *andcmd(t_cmd *left, t_cmd *right)
     t_andcmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
+    if(!cmd)
+        return(NULL);
     ft_bzero(cmd, sizeof(*cmd));
     cmd->type = AND;
     cmd->left = left;
@@ -638,6 +659,8 @@ t_cmd *orcmd(t_cmd *left, t_cmd *right)
     t_orcmd *cmd;
 
     cmd = malloc(sizeof(*cmd));
+    if(!cmd)
+        return(NULL);
     ft_bzero(cmd, sizeof(*cmd));
     cmd->type = OR;
     cmd->left = left;
@@ -649,6 +672,8 @@ t_cmd *parse_subshell(t_shell *shell, char **ps, int *check)
 {
     t_sub *ret;
     ret = malloc(sizeof(*ret));
+    if(!ret)
+        return(NULL);
     ret->type = SUB;
     ret->cmd = parseblock(shell, ps, check);
     return ((t_cmd *)ret);
@@ -667,8 +692,6 @@ void    parseredirs_primo(t_herepipe **pipes, t_cmd **cmd, char **ps, int *check
     {
         *check = 0;
         token = gettoken(ps, &ptr_file, &ptr_endfile);
-        if(gettoken(ps,  &ptr_file, &ptr_endfile) != 'a')
-            problem("missing file for redirection");
         if(token == '>')
             *cmd = redircmd_in(*cmd, ptr_file, ptr_endfile, 1);
         else if(token == '<')
@@ -676,11 +699,9 @@ void    parseredirs_primo(t_herepipe **pipes, t_cmd **cmd, char **ps, int *check
         else if(token == '+')
             *cmd = redircmd_append(*cmd, ptr_file, ptr_endfile, 1);
         else if(token == 'h')
-        {
             *cmd = redircmd_here(pipes, *cmd);
-        }
-        else
-            problem("this aint a redirection");
+        if(!cmd)
+            return ;
         parseredirs_er(pipes, *cmd, ps);
     }
     else
@@ -698,9 +719,6 @@ t_cmd *parseredirs_er(t_herepipe **pipes, t_cmd *cmd, char **ps)
     while(lfsymbol(ps, "><"))
     {
         token = gettoken(ps, &ptr_file, &ptr_endfile);
-        if(gettoken(ps, &ptr_file, &ptr_endfile) != 'a')
-            problem("missing file for redirection");
- 
         if(token == '>')
             temp = redircmd_in2(temp, ptr_file, ptr_endfile, 1);
         else if(token == '<')
@@ -708,17 +726,9 @@ t_cmd *parseredirs_er(t_herepipe **pipes, t_cmd *cmd, char **ps)
         else if(token == '+')
             temp = redircmd_append2(temp, ptr_file, ptr_endfile, 1);
         else if(token == 'h')
-        {
-            // printf("we balling\n");
             temp = redircmd_here2(pipes, temp);
-            // gettoken(ps, 0, 0);
-            // printf("we balling2\n");
-        }
-        else
-        {
-            problem("this aint a redirection");
-            break;
-        }
+        if(!temp)
+            return(NULL);
     }
     return (cmd);
 }
@@ -809,27 +819,19 @@ int gettoken(char **ptr, char **ptr_token, char **ptr_endtoken)
     return (check);
 }
 
-void problem(char *s) // A sauter de partout
-{
-    fprintf(stderr, "%s\n", s);
-    exit(1);
-}
 t_cmd *parseblock(t_shell *shell, char **ps, int *check)
 {
     t_cmd *cmd;
-    if(!lfsymbol(ps, "("))
-        problem("this aint my block, oopy wrong hood?!?");
     gettoken(ps,  0, 0);
     cmd = parseline(shell, ps);
-    if(!lfsymbol(ps, ")"))
-        problem("syntax error");
     gettoken(ps, 0, 0);
-    // printf("ps: %s\n", *ps);
     return (cmd);
 }
 void initialize_cmd(t_cmd **ret, t_execcmd **cmd, int *argc) 
 {
     *ret = execcmd();
+    if(!ret)
+        return ;
     *cmd = (t_execcmd *)*ret;
     *argc = 0;
 }
@@ -855,6 +857,23 @@ char *ft_strdup_arg(char *start, char *end)
     copy[i] = '\0';
     return (copy);
 }
+char **args_malloc(int argc, char *ptr_arg, char *ptr_earg, char **args)
+{
+    char **ret;
+    int i;
+
+    i = 0;
+    ret = malloc(sizeof(char*) * (argc + 2));
+    if(argc > 0)
+        while(args[i])
+        {
+            ret[i] = ft_strdup(args[i]);
+            i++;
+        }
+    ret[i] = ft_strdup_arg(ptr_arg, ptr_earg); 
+    ret[++i] = NULL;
+    return(ret);
+};
 int parse_single_argument(t_execcmd *cmd, char **ps, int argc)
 {
     char *ptr_arg;
@@ -864,11 +883,10 @@ int parse_single_argument(t_execcmd *cmd, char **ps, int argc)
     token = gettoken(ps, &ptr_arg, &ptr_earg);
     if (token == 'a') 
     {
-        cmd->args[argc] = ft_strdup_arg(ptr_arg, ptr_earg);
+        // cmd->args[argc] = ft_strdup_arg(ptr_arg, ptr_earg);
+        cmd->args = args_malloc(argc, ptr_arg, ptr_earg, cmd->args);
         return (1);
     } 
-    else if (token != 0)
-        problem("syntax");
     return 0;
 }
 
@@ -883,17 +901,19 @@ t_cmd *parseexec(t_shell *shell, char **ps)
     {
         ret = parse_subshell(shell, ps, &check);
         parseredirs_primo(&shell->pipe, &ret, ps, &check);
+        if(!ret)
+            return(NULL);
         return (ret);
     }
     initialize_cmd(&ret, &cmd, &argc);
     parseredirs_primo(&shell->pipe, &ret, ps, &check);
+    if(!ret)
+        return(NULL);
     while (!lfsymbol(ps, "|)<>&\0")) 
     {
         if (!parse_single_argument(cmd, ps, argc))
             break;
         argc++;
-        if (argc >= MAXARGS)
-            problem("too many args");
         parseredirs_primo(&shell->pipe, &ret, ps, &check);
     }
     // parseredirs_primo(&temp, ps, es, &check);
@@ -1031,8 +1051,6 @@ void emptyswitch(t_cmd *cmd)
     else if(cmd->type == REDIR)
     {
         re = (t_redircmd *)cmd;
-        if(re->cmd == 0)
-            problem("syntax error");
     }
     else if(cmd->type == 3)
     {
@@ -1506,13 +1524,13 @@ int add_lex_node(t_lexer **lex, char *str, int *i)
         return (1);
     while (str[*i] && (ft_strchr(" \t\n\r\v><|&()", str[*i]) == 0))
     {
-        if (str[*i] == '\'' || str[*i] == '\"')
-            skip_quotes(str, i, &size);
-        else
-        {
+        // if (str[*i] == '\'' || str[*i] == '\"')
+        //     skip_quotes(str, i, &size);
+        // else
+        // {
             (*i)++;  
             size++;
-        }
+        // }
     }
     new->type = LEX_WORD;
     new->next = NULL;
@@ -1530,7 +1548,21 @@ void lex_tozero(t_lexer **lex)
     (*lex)->prev = NULL;
     (*lex) = NULL;
 }
+void free_herepipe(t_shell **shell)
+{
+    t_herepipe *temp;
 
+    temp = (*shell)->pipe;
+
+    while((*shell)->pipe)
+    {
+        temp = (*shell)->pipe->next;
+        free((*shell)->pipe->str);
+        free((*shell)->pipe);
+        (*shell)->pipe = temp;
+    }
+    return ;
+}
 int lexer(t_shell **shell, char *str)
 {
     int i = 0;
@@ -1557,8 +1589,8 @@ int lexer(t_shell **shell, char *str)
                 return (free_lexer(lexer), 1);
         }
     }
-    if (lexing_check(shell, lexer))
-        return (free_lexer(lexer), 1);
+    if (lexing_check(shell, lexer)){printf("ICI\n");
+        return (free_lexer(lexer), free_herepipe(shell), 1);}
     return (free_lexer(lexer), 0);
 }
 
@@ -1709,6 +1741,8 @@ int	ft_strncmp(const char *s1, const char *s2, size_t n)
 	unsigned char	*s4;
 	size_t			cur;
 
+    if(!s1 || !s2)
+        return (0);
 	cur = 0;
 	s3 = (unsigned char *) s1;
 	s4 = (unsigned char *) s2;
@@ -1769,11 +1803,13 @@ char *heredoc_filler(char *end)
     char *heredoc;
 
 	heredoc = NULL;
+    printf("%s\n", end);
     buf = (char*)readline("heredoc> ");
     if(ft_strncmp(end, buf ,ft_strlen(end)) == 0)
     {   
+        printf("ON RENTRE DANS CETTE MERDE\n");
         free(buf);
-        return (NULL);
+        return (ft_calloc(1,1));
     }
     while(ft_strncmp(end, buf ,ft_strlen(end)) != 0)
     {   
@@ -1845,6 +1881,47 @@ void  ft_pipeaddback(t_shell **shell, t_herepipe *new)
 //     return (0);
 // }
 
+void ft_strcpy_quoteless(char **dest, char *src)
+{
+    char *temp;
+
+    temp = *dest;
+    while (*src)
+    {
+        if (*src != '\'' && *src != '\"')
+        {
+            *temp = *src; 
+            ++temp;  
+        }
+        ++src;  
+    }
+    *temp = '\0';  
+}
+char *quote_remove(int *quote, char *str)
+{
+    int i;
+    char *ret;
+    char *temp = str;
+    i = 0;
+    printf("%s\n", temp);
+    while(*temp)
+    {
+        if(*temp != '\'' && *temp != '\"')
+            i++;        
+        else 
+            (*quote)++;
+            printf("On est sur %c\n", *temp);
+        temp++;
+
+    }
+    printf("Taille %d\n", i);
+    ret = malloc(sizeof(char) * (1 + i));
+    if(!ret)
+        return (NULL);
+    ft_strcpy_quoteless(&ret, str);
+    printf("%s\n", ret);
+    return (ret);
+}
 
 int init_heredoc(t_lexer *lex, t_shell **shell)
 {
@@ -1852,15 +1929,15 @@ int init_heredoc(t_lexer *lex, t_shell **shell)
     char *temp;
     t_herepipe *node;
 
-    temp = malloc(sizeof(*temp));
-    if(!temp)
-    {
-    //printf("Minishell: malloc failed\n");
-        return (1);
-    }
-    temp = heredoc_filler(lex->next->heredoc);
     node = malloc(sizeof(*node));
-    node->str = temp;
+    node->quote = 0;
+    temp = quote_remove(&node->quote,lex->next->heredoc);
+    if(!temp)
+        return (free(node), 1);
+    node->str = heredoc_filler(temp);
+    free(temp);
+    if(!node->str){printf("CA BUG DANS NODE STR\n");
+        return (1);}
     node->stored = 0;
     node->next = NULL;
     ft_pipeaddback(shell, node);
@@ -1949,7 +2026,8 @@ int type_check(t_lexer *lex, int *i, t_shell **shell)
             printf("Minishell: syntax error near unexpected token `<<\'\n");
             return (1);
         }    
-        init_heredoc(lex, shell);
+        if(init_heredoc(lex, shell)){printf("CA BUG ICI\n\n");
+            return (1);}
     }
     return (0);
 }
@@ -1957,7 +2035,6 @@ int last_type_check(int lex)
 {
     if(lex != 1 && lex != 7)
     {
-
         printf("Minishell: syntax error near unexpected token `newline\'\n");
         return (1);
     }
@@ -1977,8 +2054,8 @@ int lexing_check(t_shell **shell, t_lexer *lexer)
     lex = lex->next;
     while(lex)
     {
-        if(type_check(lex, &i, shell))
-            return (1);
+        if(type_check(lex, &i, shell)){printf("CA BUG LA\n");
+            return (1);}
         if(lex->next == NULL)
             if(last_type_check(lex->type))
                 return (1);   
@@ -2150,18 +2227,18 @@ void free_var(t_var *var)
     }
 }
 
-void free_herepipe(t_herepipe *pipe)
-{
-    t_herepipe *temp;
+// void free_herepipe(t_herepipe *pipe)
+// {
+//     t_herepipe *temp;
 
-    while (pipe)
-    {
-        temp = pipe->next;
-        free(pipe->str);
-        free(pipe);
-        pipe = temp;
-    }
-}
+//     while (pipe)
+//     {
+//         temp = pipe->next;
+//         free(pipe->str);
+//         free(pipe);
+//         pipe = temp;
+//     }
+// }
 
 void free_env(t_env *env)
 {
@@ -2263,7 +2340,7 @@ void free_shell(t_shell *shell)
 
     free_cmd(shell->tree);  // Free the command tree
     free_var(shell->var);   // Free the variables
-    free_herepipe(shell->pipe);  // Free the here-doc pipes
+    free_herepipe(&shell);  // Free the here-doc pipes
     free_env(shell->env);    // Free the environment
 
     free(shell);  // Finally, free the shell itself
