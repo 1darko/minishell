@@ -1,6 +1,14 @@
-Quotes here doc
+made-f0Ar12s7% ./a.out "echo > file"
+TREE 2
+Redirection Command:
+  Type: REDIR
+  File: >
+  STR: (null)
+  Mode: 577
+  FD: 1
+  Execution Command:
+    Arg[0]: echo
+    Arg[1]: file
 
-odd case :
-<< ""
 
-changer args[arg] en char **args et malloc
+il prend en compte la redirection en tant que filename
