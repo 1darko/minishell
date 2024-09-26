@@ -688,10 +688,12 @@ void    parseredirs_primo(t_herepipe **pipes, t_cmd **cmd, char **ps, int *check
     t_cmd *temp;
 
     findredir(*cmd, &temp);
+    
     if (*check && lfsymbol(ps, "<>"))
     {
         *check = 0;
         token = gettoken(ps, &ptr_file, &ptr_endfile);
+        gettoken(ps,  &ptr_file, &ptr_endfile);
         if(token == '>')
             *cmd = redircmd_in(*cmd, ptr_file, ptr_endfile, 1);
         else if(token == '<')
@@ -901,8 +903,6 @@ t_cmd *parseexec(t_shell *shell, char **ps)
     {
         ret = parse_subshell(shell, ps, &check);
         parseredirs_primo(&shell->pipe, &ret, ps, &check);
-        if(!ret)
-            return(NULL);
         return (ret);
     }
     initialize_cmd(&ret, &cmd, &argc);
