@@ -285,19 +285,19 @@ void    ft_cd(char **cmd, char **env)
     return ;
 }
 
-// int main(int ac, char **av, char **env)
-// {
-//     (void)ac;
-//     (void)av;
+int main(int ac, char **av, char **env)
+{
+    (void)ac;
+    (void)av;
   
-//     char s[100]; 
+    char s[100]; 
 
-//     char **str = malloc(sizeof(char *) *3);
-//     str[0] = strdup("cd");
-//     str[1] = strdup("/home/dakojic/code");
-//     str[2] = NULL;
+    char **str = malloc(sizeof(char *) *3);
+    str[0] = strdup("cd");
+    str[1] = strdup("/home/dakojic/code");
+    str[2] = NULL;
 
-//     ft_cd(str, env);
+    ft_cd(str, env);
 
-//     return (0);
-// }
+    return (0);
+}
