@@ -11,7 +11,7 @@ SRC = ft_free.c lexing_check.c tools_heredoc.c parse_redirs.c \
 	tools_parsing.c parsing_heredoc.c lexer.c init_redirs_er.c \
 	parsing_exec.c libft.c sub_lexer.c \
 	init_redirs.c ft_parsing.c tools_node.c tokens.c \
-	minishell.c
+	minishell.c ft_memory2.c
 
 all: $(NAME)
 
@@ -22,10 +22,10 @@ OBJ = $(SRC:.c=.o)
 $(NAME) : $(OBJ)
 		$(CC) $(FLAGS)  -o $@ $^
 
--include $(DEP)
+#-include $(DEP)
 
-%.o: %.c
-	$(CC) $(FLAGS) -c $< -o $@
+#%.o: %.c
+#	$(CC) $(FLAGS) -c $< -o $@
 
 
 clean:
