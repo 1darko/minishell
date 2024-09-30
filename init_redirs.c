@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/26 13:22:59 by dakojic           #+#    #+#             */
-/*   Updated: 2024/09/26 13:23:42 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/09/30 12:32:08 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,6 +70,7 @@ t_cmd *redircmd_here(t_herepipe **pipe, t_cmd *cmd)
     t_redircmd *redir;
     t_herepipe *temp;
 
+	printf("OU LA\n");
     temp = (*pipe)->next;
     redir = malloc(sizeof(*redir));
     if(!redir)

@@ -172,6 +172,11 @@ void print_redircmd(t_redircmd *redir, int indent) {
 void print_execcmd(t_execcmd *exec, int indent) {
     print_indent(indent);
     printf("Execution Command:\n");
+    if(exec->args == NULL)
+    {
+        printf("Exec NULL\n");
+        return ;
+    }
     for (int i = 0; exec->args[i]; i++) {
         print_indent(indent + 1);
         printf("Arg[%d]: %s\n", i, exec->args[i]);

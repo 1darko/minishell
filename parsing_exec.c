@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/26 13:31:38 by dakojic           #+#    #+#             */
-/*   Updated: 2024/09/27 12:58:00 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/09/30 13:39:05 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,7 +72,7 @@ t_cmd	*parseexec(t_shell *shell, char **ps)
 		parseredirs_primo(&shell->pipe, &ret, ps, &check);
 		return (ret);
 	}
-	initialize_cmd(&ret, &cmd, &argc);
+	initialize_cmd(&ret, &cmd, &argc); ////////
 	parseredirs_primo(&shell->pipe, &ret, ps, &check);
 	if (!ret)
 		return (NULL);
@@ -83,6 +83,10 @@ t_cmd	*parseexec(t_shell *shell, char **ps)
 		argc++;
 		parseredirs_primo(&shell->pipe, &ret, ps, &check);
 	}
-	cmd->args[argc] = 0;
+	if(cmd->args)
+		cmd->args[argc] = 0;
+	else
+		cmd->args = NULL;
+
 	return (ret);
 }

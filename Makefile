@@ -1,6 +1,6 @@
 NAME = minish
 
-FLAGS = -MMD -Wall -Werror -Wextra -g3 -lreadline
+FLAGS = -g -MMD -Wall -Werror -Wextra -g3 -lreadline
 
 CC = cc
 
