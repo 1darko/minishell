@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/27 11:13:03 by dakojic           #+#    #+#             */
-/*   Updated: 2024/09/27 11:17:44 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/09/30 12:24:08 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,14 +66,12 @@ static int	ft_strncmp(const char *s1, const char *s2, size_t n)
 	s4 = (unsigned char *) s2;
 	if (n == 0)
 		return (0);
-	while (cur < n && s3[cur] != '\0' && s4[cur] != '\0')
+	while (s3[cur] != '\0' && s4[cur] != '\0')
 	{
 		if (s3[cur] != s4[cur])
 			return (s3[cur] - s4[cur]);
 		cur++;
 	}
-	if (cur == n)
-		return (0);
 	return (s3[cur] - s4[cur]);
 }
 
