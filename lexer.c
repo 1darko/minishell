@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/26 14:01:49 by dakojic           #+#    #+#             */
-/*   Updated: 2024/09/27 10:51:08 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/01 14:15:45 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,7 +71,7 @@ int	lexer(t_shell **shell, char *str)
 		if (str[i] && ft_strchr("><|&()", str[i]))
 		{
 			if (sub_lexer(&lexer, str, &i))
-				return (free_lexer(lexer), 1);
+				return (printf("Error\n"), free_lexer(lexer), 1);
 			continue ;
 		}
 		if (str[i] && !ft_strchr(" \t\n\r\v><|&()", str[i]))

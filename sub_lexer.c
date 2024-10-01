@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/27 10:37:20 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/01 13:43:18 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/01 14:12:02 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,9 +41,9 @@ static int	and_return(t_lexer **new, char *str, int *i)
 {
 	(*new)->type = LEX_AND;
 	if (str[++(*i)] == '&')
-		;
+		return (0);
 	else
-		return (free(*new), 1);
+		return (1);
 }
 
 int	sub_lexer(t_lexer **lex, char *str, int *i)
@@ -64,7 +64,10 @@ int	sub_lexer(t_lexer **lex, char *str, int *i)
 	else if (str[*i] == ')')
 		new->type = LEX_CLOSE;
 	else if (str[*i] == '&')
-		and_return(new, str, i);
+	{
+		if (and_return(&new, str, i))
+			return (free(new), 1);
+	}
 	else if (str[*i] == '|')
 		new->type = type_return(type_setter(LEX_PIPE, LEX_OR), '|', str, i);
 	(*i)++;

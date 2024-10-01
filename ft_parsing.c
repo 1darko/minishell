@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/26 13:11:45 by dakojic           #+#    #+#             */
-/*   Updated: 2024/09/27 14:40:32 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/01 14:08:59 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ t_cmd	*parse_double_node(t_shell *shell, char **ptr)
 	t_cmd		*cmd;
 	char		token;
 
-	cmd = parseexec(shell, ptr);
+	cmd = parseexec(shell, ptr, 1, 0);
 	while (*ptr)
 	{
 		if (lfsymbol(ptr, "|"))

@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/10 14:03:36 by dakojic           #+#    #+#             */
-/*   Updated: 2024/09/30 12:14:50 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/01 14:04:10 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -274,7 +274,7 @@ char *other_token(char *temp, int *check);
 void    extratoken(char **temp, int *check);
 int gettoken(char **ptr, char **ptr_token, char **ptr_endtoken);
 //
-t_cmd *parseexec(t_shell *shell, char **ps) ;
+t_cmd *parseexec(t_shell *shell, char **ps, int check, int argc) ;
 t_cmd *parse_double_node(t_shell *shell, char **ptr);
 t_cmd *parse_and(t_shell *shell, char **ptr);
 t_cmd *parse_or(t_shell *shell, char **ptr);
