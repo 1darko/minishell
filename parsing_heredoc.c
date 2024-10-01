@@ -16,15 +16,17 @@ static char	*quote_remove(int *quote, char *str)
 {
 	int		i;
 	char	*ret;
-	char	*temp = str;
+	char	*temp;
+
+	temp = str;
 	i = 0;
 	while (*temp)
 	{
 		if (*temp != '\'' && *temp != '\"')
-			i++;        
-		else 
-            		(*quote)++;
-        	temp++;
+			i++;
+		else
+			(*quote)++;
+		temp++;
 	}
 	ret = malloc(sizeof(char) * (1 + i));
 	if (!ret)
@@ -35,13 +37,13 @@ static char	*quote_remove(int *quote, char *str)
 
 int	init_heredoc(t_lexer *lex, t_shell **shell)
 {
-	char	*eof;
-	char	*temp;
+	char		*eof;
+	char		*temp;
 	t_herepipe	*node;
 
 	node = malloc(sizeof(*node));
 	node->quote = 0;
-	temp = quote_remove(&node->quote,lex->next->heredoc);
+	temp = quote_remove(&node->quote, lex->next->heredoc);
 	if (!temp)
 		return (free(node), 1);
 	node->str = heredoc_filler(temp);
