@@ -58,21 +58,18 @@ static int	parse_single_argument(t_execcmd *cmd, char **ps, int argc)
 	return (0);
 }
 
-t_cmd	*parseexec(t_shell *shell, char **ps)
+t_cmd	*parseexec(t_shell *shell, char **ps, int check, int argc)
 {
 	t_cmd		*ret;
 	t_execcmd	*cmd;
-	int			argc;
-	int			check;
 
-	check = 1;
 	if (lfsymbol(ps, "("))
 	{
 		ret = parse_subshell(shell, ps, &check);
 		parseredirs_primo(&shell->pipe, &ret, ps, &check);
 		return (ret);
 	}
-	initialize_cmd(&ret, &cmd, &argc); ////////
+	initialize_cmd(&ret, &cmd, &argc);
 	parseredirs_primo(&shell->pipe, &ret, ps, &check);
 	if (!ret)
 		return (NULL);
@@ -83,10 +80,9 @@ t_cmd	*parseexec(t_shell *shell, char **ps)
 		argc++;
 		parseredirs_primo(&shell->pipe, &ret, ps, &check);
 	}
-	if(cmd->args)
+	if (cmd->args)
 		cmd->args[argc] = 0;
 	else
 		cmd->args = NULL;
-
 	return (ret);
 }
