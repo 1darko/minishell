@@ -304,7 +304,6 @@ int main(int ac, char **av, char **env)
     copy = strdup(av[1]);
     parsecmd(&shell ,copy);
     print_cmd(shell->tree, 0);
-    free(copy);
     free(shell); // If lexer failed shell empty, if not plenty more to free
     // free_shell(shell);
 
