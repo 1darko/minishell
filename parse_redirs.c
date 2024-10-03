@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/26 13:26:02 by dakojic           #+#    #+#             */
-/*   Updated: 2024/09/30 11:45:34 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/03 10:52:48 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,6 +52,7 @@ t_cmd	*parseredirs_er(t_herepipe **pipes, t_cmd *cmd, char **ps)
 	while (lfsymbol(ps, "><"))
 	{
 		token = gettoken(ps, &ptr_file, &ptr_endfile);
+		gettoken(ps, &ptr_file, &ptr_endfile);
 		if (token == '>')
 			temp = redircmd_in2(temp, ptr_file, ptr_endfile, 1);
 		else if (token == '<')
