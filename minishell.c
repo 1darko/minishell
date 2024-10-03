@@ -15,115 +15,6 @@
 
 
 
-t_cmd *parse_and(t_shell *shell, char **ptr)
-{
-    t_cmd *cmd;
-
-    cmd = parse_double_node(shell, ptr);
-    if(*ptr && lfsymbol(ptr,  "&&"))
-    {
-        gettoken(ptr, 0, 0);
-        cmd = andcmd(cmd, parse_and(shell, ptr));
-    }
-    return (cmd);
-}
-
-t_cmd *parse_or(t_shell *shell, char **ptr)
-{
-    t_cmd *cmd;
-
-    cmd = parse_double_node(shell, ptr);
-    if(*ptr  && lfsymbol(ptr, "||"))
-    {
-        gettoken(ptr,  0, 0);
-        cmd = orcmd(cmd, parse_or(shell, ptr));
-    }
-    return (cmd);
-}
-
-
-void nulargs(t_cmd* cmd)
-{
-    int i;
-    int j;
-
-    i = 0;
-    t_execcmd *exe;
-
-    exe = (t_execcmd *)cmd;
-
-    while((exe->args[i]) != 0)
-    {
-        *exe->args[i] = 0;
-        i++;
-    }
-}
-
-
-
-
-
-int prev_check(t_lexer *lex, char *str)
-{
-    int i;
-
-    i = 0;
-    if(!lex)
-        return (1);
-    while(str[i])
-    {   
-        if((lex->prev->type + 48) == str[i])
-            return (0);
-        if(str[i] == '>' && lex->prev->type == LEX_APPEND)
-            return (0);
-        i++;
-    }
-    return (1);
-}
-int next_check(t_lexer *lex, char *str)
-{
-    int i;
-
-    i = 0;
-    if(!lex)
-        return (1);
-    while(str[i])
-    {
-        if(lex->next == 0)
-        {
-            if(str[i] == '0')
-                return (0);
-            else
-                return (1);
-        }
-        if((lex->next->type + 48) == str[i])
-            return (0);
-        i++;
-    }
-    return (1);
-}
-int first_type_check(t_lexer *lex, int *i, t_shell **shell)
-{
-    if(lex->type != LEX_START)
-    {
-        printf("Minishell: syntax error near unexpected token `newline\'\n");
-        return (1);
-    }
-    return (0);
-}
-
-
-
-char *empty_string()
-{
-    char *str;
-
-    str = malloc(sizeof(char) * 1);
-    if(!str)
-        return (NULL);
-    str[0] = '\0';
-    return (str);
-}
 
 
 // t_herepipe  ft_lastpipe(t_herepipe *pipe)
@@ -272,21 +163,21 @@ void print_cmd(t_cmd *cmd, int indent) {
     }
 }
 
-void free_cmd(t_cmd *cmd);
+// void free_cmd(t_cmd *cmd);
 
-void free_var(t_var *var)
-{
-    t_var *temp;
+// void free_var(t_var *var)
+// {
+//     t_var *temp;
 
-    while (var)
-    {
-        temp = var->next;
-        free(var->alias);
-        free(var->value);
-        free(var);
-        var = temp;
-    }
-}
+//     while (var)
+//     {
+//         temp = var->next;
+//         free(var->alias);
+//         free(var->value);
+//         free(var);
+//         var = temp;
+//     }
+// }
 
 // void free_herepipe(t_herepipe *pipe)
 // {
@@ -301,18 +192,18 @@ void free_var(t_var *var)
 //     }
 // }
 
-void free_env(t_env *env)
-{
-    if (!env || !env->env)
-        return;
+// void free_env(t_env *env)
+// {
+//     if (!env || !env->env)
+//         return;
 
-    for (int i = 0; env->env[i]; i++)
-    {
-        free(env->env[i]);
-    }
-    free(env->env);
-    free(env);
-}
+//     for (int i = 0; env->env[i]; i++)
+//     {
+//         free(env->env[i]);
+//     }
+//     free(env->env);
+//     free(env);
+// }
 
 void free_cmd(t_cmd *cmd)
 {
@@ -386,18 +277,18 @@ void free_cmd(t_cmd *cmd)
     }
 }
 
-void free_shell(t_shell *shell)
-{
-    if (!shell)
-        return;
+// void free_shell(t_shell *shell)
+// {
+//     if (!shell)
+//         return;
 
-    free_cmd(shell->tree);  // Free the command tree
-    free_var(shell->var);   // Free the variables
-    free_herepipe(&shell);  // Free the here-doc pipes
-    free_env(shell->env);    // Free the environment
+//     free_cmd(shell->tree);  // Free the command tree
+//     free_var(shell->var);   // Free the variables
+//     free_herepipe(&shell);  // Free the here-doc pipes
+//     free_env(shell->env);    // Free the environment
 
-    free(shell);  // Finally, free the shell itself
-}
+//     free(shell);  // Finally, free the shell itself
+// }
 
 
 int main(int ac, char **av, char **env)
