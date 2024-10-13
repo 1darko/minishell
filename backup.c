@@ -1080,7 +1080,7 @@ void *parsecmd(t_shell **shell, char *str)
 {
     t_cmd *cmdtree;
 
-    if(str[0] == '\0')
+    if(str[0] == '\0' || quote_check(str))
         return (free(str), NULL);
     if(lexer(shell, str)){printf("LEXER FAILED\n"); 
         return (NULL);}

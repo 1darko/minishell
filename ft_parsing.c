@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/26 13:11:45 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/01 14:08:59 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/03 11:50:28 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@ void	*parsecmd(t_shell **shell, char *str)
 {
 	t_cmd	*cmdtree;
 
-	if (str[0] == '\0')
+	if (str[0] == '\0' || quote_check(str))
 		return (free(str), NULL);
 	if (lexer(shell, str))
 		return (NULL);

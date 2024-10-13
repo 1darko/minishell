@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/10 14:03:36 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/01 14:04:10 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/03 11:47:52 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -280,7 +280,7 @@ t_cmd *parse_and(t_shell *shell, char **ptr);
 t_cmd *parse_or(t_shell *shell, char **ptr);
 t_cmd *parseline(t_shell *shell, char **ptr);
 void *parsecmd(t_shell **shell, char *str);
-
+int quote_check(char *str);
 
 // Lexer
 int lexer(t_shell **shell, char *str);
