@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/22 12:40:04 by dakojic           #+#    #+#             */
-/*   Updated: 2024/08/25 16:52:11 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/14 14:28:33 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,28 +34,28 @@ int n_option(char **cmd, int *i, bool *arg)
     }
     return (0);
 }
-int ft_echo(char ***cmd)
+int ft_echo(t_execs *execs)
 {
     int i;
     bool n_arg;
 
     i = 1;
     n_arg = false;
-    n_option(*cmd, &i, &n_arg);
-    while((*cmd)[i])
+    n_option(*((t_execcmd *)execs->cmd)->args, &i, &n_arg);
+    while((((t_execcmd *)execs->cmd)->args)[i])
     {
-        write(1, (*cmd)[i], ft_strlen((*cmd)[i]));
-        if((*cmd)[i + 1] != 0)
+        write(1, ((t_execcmd *)execs->cmd)->args[i], ft_strlen(((t_execcmd *)execs->cmd)->args[i]));
+        if(((t_execcmd *)execs->cmd)->args[i + 1] != 0)
             write(1, " ", 1);
         i++;
     }
     if(n_arg == false)
         write(1, "\n", 1);
     i = 0;
-    while((*cmd)[i])
-        free((*cmd)[i++]);
-    free(*cmd);
-    *cmd = NULL;
+    while(((t_execcmd *)execs->cmd)->args[i])
+        free(((t_execcmd *)execs->cmd)->args[i++]);
+    free(((t_execcmd *)execs->cmd)->args);
+    ((t_execcmd *)execs->cmd)->args = NULL;
     return (0);
 }
 // int main()
