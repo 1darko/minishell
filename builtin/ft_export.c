@@ -1,7 +1,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include "../minishell.h"
 
 
 int ft_strlen(char *s)
@@ -172,30 +172,32 @@ void ft_export2(char ***cmd, char ***env)
         free(lf);
     }
 }
-void ft_export(char ***cmd, char ***env)
+
+
+void ft_export(t_execs *execs)
 {
     char *lf;
     int i;
     int j;
 
     i = 1;
-    while(!ft_strncmp((*cmd)[i], "-p", ft_strlen((*cmd)[i])) && (*cmd)[i + 1] != NULL)
+    while(!ft_strncmp(((t_execcmd *)execs->cmd)->args[i], "-p", ft_strlen(((t_execcmd *)execs->cmd)->args[i]) && ((t_execcmd *)execs->cmd)->args[i + 1] != NULL))
        i++;
-    if((*cmd)[1] == NULL || (!ft_strncmp((*cmd)[i], "-p", ft_strlen((*cmd)[i])) && (*cmd)[i + 1] == NULL))
+    if(((t_execcmd *)execs->cmd)->args[1] == NULL || (!ft_strncmp(((t_execcmd *)execs->cmd)->args[i], "-p", ft_strlen(((t_execcmd *)execs->cmd)->args[i]) && ((t_execcmd *)execs->cmd)->args[i + 1] == NULL)))
     {   
-        free_array(*cmd);
-        print_env(*env);
+        free_array(((t_execcmd *)execs->cmd)->args[i]);
+        print_env(((t_shell *)execs->shell)->env);
         return ;
     }
-    ft_export2(cmd, env);
+    ft_export2(((t_execcmd *)execs->cmd)->args, ((t_shell *)execs->shell)->env);
     i = 0;
-    while((*cmd)[i] != NULL)
+    while(((t_execcmd *)execs->cmd)->args[i] != NULL)
     {
-        free((*cmd)[i]);
+        free(((t_execcmd *)execs->cmd)->args[i]);
         i++;
     }
-    free(*cmd);
-    print_env(*env);
+    free(((t_execcmd *)execs->cmd)->args);
+    print_env(((t_shell *)execs->shell)->env);
 }
 
 // #include  <string.h>
