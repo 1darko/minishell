@@ -14,16 +14,17 @@
 //     free(array);
 // }
 
-void env_display(char **cmd, char **env)
+void env_display(t_execs *execs)
 {
     int i;
+
     i = 0;
-    while(env[i])
+    while(execs->shell->env[i])
     {
-        printf("%s\n", env[i]);
+        printf("%s\n", ((t_shell *)execs->shell)->env[i]);
         i++;
     }
-    free_array(cmd);
+    free_array(((t_execcmd *)execs->cmd)->args);
 }
 
 // int main()
