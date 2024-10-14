@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/22 17:15:27 by dakojic           #+#    #+#             */
-/*   Updated: 2024/07/22 18:18:51 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/14 14:15:37 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,10 +26,12 @@
 // 	free(s);
 // 	return ;
 // }
-void	ft_pwd(char **cmd)
+
+void	ft_pwd(t_execs *execs)
 {
     char	*pwd;
-    free_array(cmd);
+    free_array(((t_execcmd *)execs->cmd)->args);
+    ((t_execcmd *)execs->cmd)->args =NULL;
     pwd = getcwd(NULL, 0);
     if(!pwd)
     {
