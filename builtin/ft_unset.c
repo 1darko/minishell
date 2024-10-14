@@ -128,16 +128,16 @@ void ft_unset2(char ***cmd, char ***env, int j)
         }
     }
 }
-void ft_unset(char ***cmd, char ***env)
+void ft_unset(t_execs *execs)
 {
     int j;
 
     j = 0;
-    if((*cmd)[1] == NULL)
-        return(free_array(*cmd));
-    free((*cmd)[0]);
-    ft_unset2(cmd, env, j);
-    free((*cmd));
+    if(((t_execcmd *)execs->cmd)->args[1] == NULL)
+        return(free_array(((t_execcmd *)execs->cmd)->args));
+    free(((t_execcmd *)execs->cmd)->args[0]);
+    ft_unset2(((t_execcmd *)execs->cmd)->args, ((t_shell *)execs->shell)->env, j);
+    free(((t_execcmd *)execs->cmd)->args);
 }
 
 // int main()
