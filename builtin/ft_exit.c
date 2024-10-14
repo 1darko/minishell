@@ -6,14 +6,15 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/14 16:17:13 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/14 16:19:55 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/14 16:42:50 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../minishell.h"
 
-void ft_exit()
+void ft_exit(t_execs *ex)
 {
+    execfree(ex);
     write(1,"exit\n",5);
     exit(0);
 }
