@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "../minishell.h"
 
 void	free_array(char **s)
 {
@@ -260,44 +261,45 @@ static void ft_switch_pwd(char *newpwd, char *oldpwd, char ***env)
 	}
 }
 
-void    ft_cd(char **cmd, char **env)
+// t_exec *cmd; 
+void    ft_cd(t_execs *execs)
 {
     char *oldpwd;
     char *newpwd;
 	int check;
 
-	if(cmd[2])
+	if(((t_execcmd *)execs->cmd)->args[2])
 	{
 		printf("Minishell: cd: too many arguments\n"); /// Changer le errno a 1???
-		free_array(cmd);
+		free_array(((t_execcmd *)execs->cmd)->args);
 		return ;
 	}
-	ft_getcwd(&oldpwd, size_pwd(env));
-	if(ft_move(cmd, env) == 1)
+	ft_getcwd(&oldpwd, size_pwd(execs->shell->env));
+	if(ft_move(((t_execcmd *)execs->cmd)->args, execs->shell->env) == 1)
 	{
 		free(oldpwd);
 		return ;
 	}
-	ft_getcwd(&newpwd, size_pwd(env));
-    ft_switch_pwd(newpwd, oldpwd, &env);
+	ft_getcwd(&newpwd, size_pwd(execs->shell->env));
+    ft_switch_pwd(newpwd, oldpwd, &execs->shell->env);
 	free(oldpwd);
 	free(newpwd);
     return ;
 }
 
-int main(int ac, char **av, char **env)
-{
-    (void)ac;
-    (void)av;
+// int main(int ac, char **av, char **env)
+// {
+//     (void)ac;
+//     (void)av;
   
-    char s[100]; 
+//     char s[100]; 
 
-    char **str = malloc(sizeof(char *) *3);
-    str[0] = strdup("cd");
-    str[1] = strdup("/home/dakojic/code");
-    str[2] = NULL;
+//     char **str = malloc(sizeof(char *) *3);
+//     str[0] = strdup("cd");
+//     str[1] = strdup("/home/dakojic/code");
+//     str[2] = NULL;
 
-    ft_cd(str, env);
+//     ft_cd(str, env);
 
-    return (0);
-}
+//     return (0);
+// }
