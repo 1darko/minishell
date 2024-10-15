@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/14 16:17:13 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/15 14:22:07 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/15 14:25:21 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,7 @@ static long long ret_exit(char *x)
     {
         if(!(x[i] >= '0' && x[i] <= '9'))
         {
-            printf("Error: Invalid exit argument. Numeric argument required.\n");
+            write(2, "Error: Invalid exit argument. Numeric argument required.\n", 58);
             return (2);
         }
         i++;
