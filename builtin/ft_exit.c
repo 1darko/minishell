@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/14 16:17:13 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/15 14:25:21 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/16 12:15:27 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,7 @@ void ft_exit(t_execs *ex)
     ret = 0;
     if(((t_execcmd *)ex->cmd)->args[1])
         ret = (unsigned int)ret_exit(((t_execcmd *)ex->cmd)->args[1]);
-    ft_listfree(ex->fds, fdsfree);
+    // ft_listfree(ex->fds, fdsfree);
     execfree(ex);
     write(2,"exit\n",5);
     exit(ret);
