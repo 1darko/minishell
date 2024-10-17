@@ -2,66 +2,6 @@
 
 // unset with no options
 
-int ft_strlen(const char *s)
-{
-    int i;
-
-    i = 0;
-    while(s[i])
-        i++;
-    return (i);
-}
-
-int	ft_strcmp(const char *s1, const char *s2)
-{
-	unsigned char	*s3;
-	unsigned char	*s4;
-
-	s3 = (unsigned char *)s1;
-	s4 = (unsigned char *)s2;
-	while (*s3 == *s4 && *s3 != '\0')
-	{
-		++s3;
-		++s4;
-	}
-	return (*s3 - *s4);
-}
-
-char	*ft_strdup(const char *s)
-{
-	size_t	len;
-	size_t	cur;
-	char	*dup;
-
-	cur = 0;
-	len = ft_strlen((char *)s);
-	dup = (char *)malloc(sizeof(char) * len + 1);
-	if (dup == 0)
-		return (NULL);
-	while (s[cur] != '\0')
-	{
-		dup[cur] = s[cur];
-		cur++;
-	}
-	dup[cur] = '\0';
-	return (dup);
-}
-
-void	free_array(char **s)
-{
-	int	i;
-
-	i = 0;
-	while (s[i])
-	{
-		free(s[i]);
-		i++;
-	}
-	free(s);
-	return ;
-}
-
-
 static char **unset_env(char ***str, int skip)
 {
     char **copy;
@@ -136,8 +76,9 @@ void ft_unset(t_execs *execs)
     if(((t_execcmd *)execs->cmd)->args[1] == NULL)
         return(free_array(((t_execcmd *)execs->cmd)->args));
     free(((t_execcmd *)execs->cmd)->args[0]);
-    ft_unset2(((t_execcmd *)execs->cmd)->args, ((t_shell *)execs->shell)->env, j);
-    free(((t_execcmd *)execs->cmd)->args);
+    ft_unset2(&((t_execcmd *)execs->cmd)->args, &((t_shell *)execs->shell)->env, j);
+    execfree(execs);
+    // free(((t_execcmd *)execs->cmd)->args);
 }
 
 // int main()

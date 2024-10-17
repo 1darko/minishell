@@ -2,29 +2,22 @@
 
 // env with no options or arguments
 
-// void free_array(char **array)
-// {
-//     int i;
-//     i = 0;
-//     while(array[i])
-//     {
-//         free(array[i]);
-//         i++;
-//     }
-//     free(array);
-// }
-
-void env_display(t_execs *execs)
+void ft_env(t_execs *execs)
 {
     int i;
 
     i = 0;
+    if(!execs->shell->env[0])
+    {
+        execs->ret = 1;
+        execfree(execs);
+    }
     while(execs->shell->env[i])
     {
         printf("%s\n", ((t_shell *)execs->shell)->env[i]);
         i++;
     }
-    free_array(((t_execcmd *)execs->cmd)->args);
+    execfree(execs);
 }
 
 // int main()

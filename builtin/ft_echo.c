@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/22 12:40:04 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/14 14:28:33 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/17 11:59:55 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 // Echo always returns 0 unless write fails
 
 
-int n_option(char **cmd, int *i, bool *arg)
+static int n_option(char **cmd, int *i, bool *arg)
 {
     int j;
 
@@ -41,7 +41,7 @@ int ft_echo(t_execs *execs)
 
     i = 1;
     n_arg = false;
-    n_option(*((t_execcmd *)execs->cmd)->args, &i, &n_arg);
+    n_option(((t_execcmd *)execs->cmd)->args, &i, &n_arg);
     while((((t_execcmd *)execs->cmd)->args)[i])
     {
         write(1, ((t_execcmd *)execs->cmd)->args[i], ft_strlen(((t_execcmd *)execs->cmd)->args[i]));
@@ -52,6 +52,7 @@ int ft_echo(t_execs *execs)
     if(n_arg == false)
         write(1, "\n", 1);
     i = 0;
+    // freeexec(execs)????????????
     while(((t_execcmd *)execs->cmd)->args[i])
         free(((t_execcmd *)execs->cmd)->args[i++]);
     free(((t_execcmd *)execs->cmd)->args);

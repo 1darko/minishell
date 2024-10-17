@@ -3,39 +3,6 @@
 #include <stdlib.h>
 #include "../minishell.h"
 
-
-int ft_strlen(char *s)
-{
-    int i;
-
-    i = 0;
-    while(s[i] != '\0')
-        i++;
-    return (i);
-}
-
-char	*ft_strdup(const char *s)
-{
-	size_t	len;
-	size_t	cur;
-	char	*dup;
-
-	cur = 0;
-	len = ft_strlen((char *)s);
-	dup = (char *)malloc(sizeof(char) * len + 1);
-	if (dup == 0)
-		return (NULL);
-	while (s[cur] != '\0')
-	{
-		dup[cur] = s[cur];
-		cur++;
-	}
-	dup[cur] = '\0';
-	return (dup);
-}
-
-
-
 int	ft_strncmp(const char *s1, const char *s2, size_t n)
 {
 	unsigned char	*s3;
@@ -116,19 +83,6 @@ void print_env(char **env)
     }
     return ;
 }
-void	free_array(char **s)
-{
-	int	i;
-
-	i = 0;
-	while (s[i])
-	{
-		free(s[i]);
-		i++;
-	}
-	free(s);
-	return ;
-}
 
 int	ft_isalpha(int c)
 {
@@ -185,11 +139,11 @@ void ft_export(t_execs *execs)
        i++;
     if(((t_execcmd *)execs->cmd)->args[1] == NULL || (!ft_strncmp(((t_execcmd *)execs->cmd)->args[i], "-p", ft_strlen(((t_execcmd *)execs->cmd)->args[i]) && ((t_execcmd *)execs->cmd)->args[i + 1] == NULL)))
     {   
-        free_array(((t_execcmd *)execs->cmd)->args[i]);
+        free_array(&((t_execcmd *)execs->cmd)->args[i]);
         print_env(((t_shell *)execs->shell)->env);
         return ;
     }
-    ft_export2(((t_execcmd *)execs->cmd)->args, ((t_shell *)execs->shell)->env);
+    ft_export2(&((t_execcmd *)execs->cmd)->args, &((t_shell *)execs->shell)->env);
     i = 0;
     while(((t_execcmd *)execs->cmd)->args[i] != NULL)
     {

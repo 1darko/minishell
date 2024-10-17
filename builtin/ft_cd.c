@@ -40,6 +40,8 @@ char	*get_env(char *name, char **env)
 static void	ft_getcwd(char **pwd, int size)
 {
 	*pwd = malloc(sizeof(char) * (size + 1));
+	if(!pwd)
+		return ;
 	getcwd(*pwd, size + 1);
 	return ;
 }
@@ -101,20 +103,26 @@ void    ft_cd(t_execs *execs)
 
 	if(((t_execcmd *)execs->cmd)->args[2])
 	{
-		printf("Minishell: cd: too many arguments\n"); /// Changer le errno a 1???
-		free_array(((t_execcmd *)execs->cmd)->args);
+		printf("Minishell: cd: too many arguments\n");
+		execs->ret = 1;
+		execfree(execs);
 		return ;
 	}
 	ft_getcwd(&oldpwd, size_pwd(execs->shell->env));
 	if(ft_move(((t_execcmd *)execs->cmd)->args, execs->shell->env) == 1)
 	{
+		execs->ret = 1;
 		free(oldpwd);
+		execfree(execs);
 		return ;
 	}
 	ft_getcwd(&newpwd, size_pwd(execs->shell->env));
     ft_switch_pwd(newpwd, oldpwd, &execs->shell->env);
+	if(execs->shell->env == NULL)
+		execs->ret = 1;
 	free(oldpwd);
 	free(newpwd);
+	execfree(execs);
     return ;
 }
 
