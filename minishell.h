@@ -6,13 +6,12 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/10 14:03:36 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/03 11:47:52 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/17 11:06:41 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef MINISHELL_H
-#define MINISHELL_H
-
+# define MINISHELL_H
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -23,13 +22,7 @@
 #include <fcntl.h>
 #include <readline/readline.h>
 #include <readline/history.h>
-
-// Structs 
-#define MAXARGS 50
-#define MAXLINE 1500001
-
-
-// enums
+#include <stdbool.h>
 
 typedef enum e_lex
 {
@@ -64,15 +57,23 @@ typedef enum e_type
 
 // Structs 
 
+
+
+typedef struct s_fds
+{
+	int					fd;
+	int					type;
+}						t_fds;
+
+
+
+
 typedef struct s_cmd
 {
     int type;
 }   t_cmd;
 
-typedef struct s_env
-{
-    char **env;
-}   t_env;
+
 
 typedef struct s_sub
 {
@@ -100,9 +101,17 @@ typedef struct s_shell
     int type;
     t_cmd *tree;
     t_var *var;
-    t_env *env;
+    char **env;
     t_herepipe *pipe;
 }   t_shell;
+
+typedef struct s_execs
+{
+	t_fds				*fds;
+	t_shell				*shell;
+	int					ret;
+	t_cmd				*cmd;
+}						t_execs;
 
 typedef struct s_execcmd
 {
@@ -125,6 +134,7 @@ typedef struct s_redircmd
     char *efile;
     int mode;
     int fd;
+    int quote;
     char *heredoc;
 }   t_redircmd;
 
@@ -318,7 +328,7 @@ void print_cmd(t_cmd *cmd, int indent);
 
 // To remove ?? 
 void free_var(t_var *var);
-void free_env(t_env *env);
+void free_env(char **env);
 void free_cmd(t_cmd *cmd);
 void free_shell(t_shell *shell);
 
