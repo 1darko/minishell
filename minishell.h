@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/10 14:03:36 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/17 11:06:41 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/17 11:58:00 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -209,7 +209,7 @@ typedef struct s_lexer
 // // Pipex 
 // void ft_exec(t_cmd *tree, char **env);
 // char	*get_path(char *cmd, char **env);
-// static char	*ft_strjoin(char const *s1, char const *s2);
+char	*ft_strjoin(char const *s1, char const *s2);
 // char	*get_env(char *name, char **env);
 // static char	*ft_substr(char const *s, unsigned int start, size_t len);
 // void	free_array(char **s);
@@ -256,7 +256,9 @@ void	ft_lstadd_back(t_lexer **lst, t_lexer **new);
 char **args_malloc(int argc, char *ptr_arg, char *ptr_earg, char **args);
 char *empty_string(); // calloc 1 1 ?? 
 void ft_strcpy_quoteless(char **dest, char *src);
-
+int	ft_strcmp2(const char *s1, const char *s2);
+char	*ft_substr(char const *s, unsigned int start, size_t len);
+int size_pwd(char **env);
 
 // CMD init
 
@@ -278,10 +280,10 @@ t_cmd *orcmd(t_cmd *left, t_cmd *right);
 
 void    parseredirs_primo(t_herepipe **pipes, t_cmd **cmd, char **ps, int *check);
 t_cmd *parseredirs_er(t_herepipe **pipes, t_cmd *cmd, char **ps);
-void findredir(t_cmd *cmd, t_cmd **temp);
+// void findredir(t_cmd *cmd, t_cmd **temp);
 
-char *other_token(char *temp, int *check);
-void    extratoken(char **temp, int *check);
+// char *other_token(char *temp, int *check);
+// void    extratoken(char **temp, int *check);
 int gettoken(char **ptr, char **ptr_token, char **ptr_endtoken);
 //
 t_cmd *parseexec(t_shell *shell, char **ps, int check, int argc) ;
@@ -332,5 +334,17 @@ void free_env(char **env);
 void free_cmd(t_cmd *cmd);
 void free_shell(t_shell *shell);
 
+// Built-in
 
+void    ft_cd(t_execs *execs);
+int ft_echo(t_execs *execs);
+void ft_env(t_execs *execs);
+void ft_exit(t_execs *ex);
+void ft_export(t_execs *execs);
+void	ft_pwd(t_execs *execs);
+void ft_unset(t_execs *execs);
+
+
+// To remove
+int	execfree(t_execs *exec);
 #endif
