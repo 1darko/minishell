@@ -13,142 +13,6 @@
 #include <string.h>
 #include "../minishell.h"
 
-void	free_array(char **s)
-{
-	int	i;
-
-	i = 0;
-	while (s[i])
-	{
-		free(s[i]);
-		i++;
-	}
-	free(s);
-	return ;
-}
-
-size_t	ft_strlen(const char *str)
-{
-	size_t	i;
-
-	i = 0;
-	while (str[i])
-		i++;
-	return (i);
-}
-
-char	*ft_strjoin(char const *s1, char const *s2)
-{
-	size_t	len;
-	size_t	cur;
-	size_t	i;
-	char	*new;
-
-	cur = 0;
-	i = 0;
-	if (!s1 || !s2)
-		return (NULL);
-	len = ft_strlen(s1) + ft_strlen(s2);
-	new = (char *)malloc(sizeof (char) * len + 1);
-	if (!new)
-		return (NULL);
-	while (s1[cur] != '\0')
-	{
-		new[cur] = s1[cur];
-		cur++;
-	}
-	while (s2[i] != '\0')
-	{
-		new[cur++] = s2[i++];
-	}
-	new[cur] = '\0';
-	return (new);
-}
-
-void	*ft_calloc(size_t nmemb, size_t size)
-{
-	size_t				i;
-	unsigned char		*new;
-
-	i = nmemb * size;
-	if (i == 0)
-	{
-		new = malloc(0);
-		if (!new)
-			return (0);
-		*new = 0;
-		return (new);
-	}
-	if (i < nmemb || i < size)
-		return (0);
-	new = malloc(i);
-	if (!new)
-		return (0);
-	while (i--)
-		new[i] = 0;
-	return (new);
-}
-int	ft_strcmp(const char *s1, const char *s2)
-{
-	unsigned char	*s3;
-	unsigned char	*s4;
-
-	s3 = (unsigned char *)s1;
-	s4 = (unsigned char *)s2;
-	while (*s3 == *s4 && *s3 != '\0')
-	{
-		++s3;
-		++s4;
-	}
-	return (*s3 - *s4);
-}
-
-int	ft_strcmp2(const char *s1, const char *s2)
-{
-	unsigned char	*s3;
-	unsigned char	*s4;
-
-	s3 = (unsigned char *)s1;
-	s4 = (unsigned char *)s2;
-	while (*s3 == *s4 && *s3 != '\0')
-	{
-		++s3;
-		++s4;
-	}
-	if(*s3 == '=' && *s4 == '\0')
-        return (0);
-    return (1);
-}
-
-char	*ft_substr(char const *s, unsigned int start, size_t len)
-{
-	size_t	i;
-	size_t	j;
-	char	*copy;
-
-	if (start > ft_strlen(s))
-		return (ft_calloc(1, 1));
-	if (len + start <= ft_strlen(s))
-		copy = (char *)malloc(sizeof(char) * (len + 1));
-	else
-		copy = (char *)malloc(sizeof(char) * (ft_strlen(s + start) + 1));
-	if (!copy)
-		return (NULL);
-	i = 0;
-	j = 0;
-	while (s[i])
-	{
-		if (i >= start && j < len)
-		{
-			copy[j] = s[i];
-			j++;
-		}
-		i++;
-	}
-	copy[j] = 0;
-	return (copy);
-}
-
 char	*get_env(char *name, char **env)
 {
 	int		i;
@@ -171,19 +35,6 @@ char	*get_env(char *name, char **env)
 		i++;
 	}
 	return (NULL);
-}
-static int size_pwd(char **env)
-{
-    int i;
-
-    i = 0;
-    while(env[i])
-    {
-        if(!ft_strcmp2(env[i], "PWD"))
-            break;
-        i++;
-    }
-    return (ft_strlen(env[i]));
 }
 
 static void	ft_getcwd(char **pwd, int size)
@@ -211,25 +62,6 @@ static int ft_move(char **cmd, char **env)
 		}
 	free_array(cmd);
 	return (0);
-}
-char	*ft_strdup(const char *s)
-{
-	size_t	len;
-	size_t	cur;
-	char	*dup;
-
-	cur = 0;
-	len = ft_strlen((char *)s);
-	dup = (char *)malloc(sizeof(char) * len + 1);
-	if (dup == 0)
-		return (NULL);
-	while (s[cur] != '\0')
-	{
-		dup[cur] = s[cur];
-		cur++;
-	}
-	dup[cur] = '\0';
-	return (dup);
 }
 
 static void ft_switch_pwd(char *newpwd, char *oldpwd, char ***env)
@@ -261,7 +93,6 @@ static void ft_switch_pwd(char *newpwd, char *oldpwd, char ***env)
 	}
 }
 
-// t_exec *cmd; 
 void    ft_cd(t_execs *execs)
 {
     char *oldpwd;
