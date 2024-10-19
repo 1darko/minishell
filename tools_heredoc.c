@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/27 11:13:03 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/17 11:13:47 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/19 17:32:19 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@ static size_t	ft_strlen_heredoc(const char *str)
 	return (i);
 }
 
-static char	*ft_strjoin_heredoc(char const *s1, char const *s2)
+static char	*ft_strjoin_heredoc(char *s1, char const *s2)
 {
 	size_t	len;
 	size_t	cur;
@@ -50,6 +50,7 @@ static char	*ft_strjoin_heredoc(char const *s1, char const *s2)
 	}
 	new[cur] = '\n';
 	new[cur + 1] = '\0';
+	free(s1);
 	return (new);
 }
 
@@ -75,25 +76,50 @@ static int	ft_strncmp(const char *s1, const char *s2, size_t n)
 	return (s3[cur] - s4[cur]);
 }
 
+static void    catcher(int signum)
+{
+    if (signum == SIGINT)
+    {
+        bigsignal = SIGINT;
+		close(0);
+    }
+}
+
+
+void    signals(void)
+{
+    struct sigaction int_action;
+    struct sigaction quit_action;
+
+    int_action.sa_handler = catcher;
+    int_action.sa_flags = 0;
+    sigemptyset(&int_action.sa_mask);
+    sigaction(SIGINT, &int_action, 0);
+    signal(SIGQUIT, SIG_IGN);
+}
+
+
 char	*heredoc_filler(char *end)
 {
 	char	*buf;
 	char	*heredoc;
-
 	heredoc = NULL;
-	buf = (char *)readline("heredoc> ");
-	if (ft_strncmp(end, buf, ft_strlen(end)) == 0)
-	{
-		free(buf);
-		return (ft_calloc(1, 1));
-	}
+	signals();
+	buf = ft_calloc(1, sizeof(char));
 	while (ft_strncmp(end, buf, ft_strlen(end)) != 0)
 	{
-		if (buf == NULL)
-			return (NULL);
 		heredoc = ft_strjoin_heredoc(heredoc, buf);
 		free(buf);
-		buf = (char *)readline("heredoc> ");
+		buf = readline("> ");
+		if(bigsignal == SIGINT)
+		{
+			open("/dev/stdin", O_WRONLY);
+			printf("BLA BLA\n");
+		}
 	}
+	if(!buf)
+		printf("minishell: warning: here-document delimited by end-of-file (wanted `%s')\n", end);
+	if(buf)
+		free(buf);
 	return (heredoc);
 }
