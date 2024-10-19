@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/26 12:18:22 by dakojic           #+#    #+#             */
-/*   Updated: 2024/09/27 13:11:47 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/17 15:15:31 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,8 +67,12 @@ void	free_herepipe(t_shell **shell)
 	while ((*shell)->pipe)
 	{
 		temp = (*shell)->pipe->next;
+		// Access the string before freeing
+		// Free the memory after you have printed or used the string
 		free((*shell)->pipe->str);
 		free((*shell)->pipe);
+		// printf("PIPE EST A %s\n", (*shell)->pipe->str);
+
 		(*shell)->pipe = temp;
 	}
 	return ;
