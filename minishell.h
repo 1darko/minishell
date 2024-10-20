@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/07/10 14:03:36 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/17 11:58:00 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/19 17:18:29 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,9 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include <stdbool.h>
+#include <signal.h>
+
+extern int bigsignal;
 
 typedef enum e_lex
 {
@@ -100,7 +103,6 @@ typedef struct s_shell
 {
     int type;
     t_cmd *tree;
-    t_var *var;
     char **env;
     t_herepipe *pipe;
 }   t_shell;

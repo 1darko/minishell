@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/26 13:20:17 by dakojic           #+#    #+#             */
-/*   Updated: 2024/09/27 11:22:09 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/17 11:13:32 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,8 @@ int	ft_strcmp(const char *s1, const char *s2)
 	}
 	return (*s3 - *s4);
 }
+
+
 
 char	*ft_strchr(char *s, char c)
 {
@@ -63,19 +65,30 @@ size_t	ft_strlcpy(char *dst, const char *src, size_t size)
 	return (len);
 }
 
-void	ft_strcpy_quoteless(char **dest, char *src)
+char	*ft_strjoin(char const *s1, char const *s2)
 {
-	char	*temp;
+	size_t	len;
+	size_t	cur;
+	size_t	i;
+	char	*new;
 
-	temp = *dest;
-	while (*src)
+	cur = 0;
+	i = 0;
+	if (!s1 || !s2)
+		return (NULL);
+	len = ft_strlen(s1) + ft_strlen(s2);
+	new = (char *)malloc(sizeof (char) * len + 1);
+	if (!new)
+		return (NULL);
+	while (s1[cur] != '\0')
 	{
-		if (*src != '\'' && *src != '\"')
-		{
-			*temp = *src;
-			++temp;
-		}
-		++src;
+		new[cur] = s1[cur];
+		cur++;
 	}
-	*temp = '\0';
+	while (s2[i] != '\0')
+	{
+		new[cur++] = s2[i++];
+	}
+	new[cur] = '\0';
+	return (new);
 }

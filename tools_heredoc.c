@@ -6,7 +6,7 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/27 11:13:03 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/19 17:32:19 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/19 18:05:47 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,7 +86,7 @@ static void    catcher(int signum)
 }
 
 
-void    signals(void)
+static void    signals(void)
 {
     struct sigaction int_action;
     struct sigaction quit_action;
@@ -94,16 +94,31 @@ void    signals(void)
     int_action.sa_handler = catcher;
     int_action.sa_flags = 0;
     sigemptyset(&int_action.sa_mask);
+	sigaddset(&int_action.sa_mask, SIGINT);
     sigaction(SIGINT, &int_action, 0);
     signal(SIGQUIT, SIG_IGN);
 }
 
+static void    signals2(void)
+{
+    struct sigaction int_action;
+    struct sigaction quit_action;
 
+    int_action.sa_handler = catcher;
+    int_action.sa_flags = 0;
+    sigemptyset(&int_action.sa_mask);
+	sigaddset(&int_action.sa_mask, SIGINT);
+    sigaction(SIGINT, &int_action, 0);
+    signal(SIGQUIT, SIG_IGN);
+}
 char	*heredoc_filler(char *end)
 {
 	char	*buf;
 	char	*heredoc;
 	heredoc = NULL;
+	int in;
+
+	in = dup(0);
 	signals();
 	buf = ft_calloc(1, sizeof(char));
 	while (ft_strncmp(end, buf, ft_strlen(end)) != 0)
@@ -113,13 +128,16 @@ char	*heredoc_filler(char *end)
 		buf = readline("> ");
 		if(bigsignal == SIGINT)
 		{
-			open("/dev/stdin", O_WRONLY);
-			printf("BLA BLA\n");
+			free(heredoc);
+			heredoc = 0;
 		}
 	}
-	if(!buf)
+	if(!buf && bigsignal != SIGINT)
 		printf("minishell: warning: here-document delimited by end-of-file (wanted `%s')\n", end);
 	if(buf)
 		free(buf);
+	signals2();
+	dup2(in, 0);
+	close(in);
 	return (heredoc);
 }

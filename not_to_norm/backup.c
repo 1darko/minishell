@@ -1582,8 +1582,8 @@ int lexer(t_shell **shell, char *str)
                 return (free_lexer(lexer), 1);
         }
     }
-    if (lexing_check(shell, lexer)){printf("ICI\n");
-        return (free_lexer(lexer), free_herepipe(shell), 1);}
+    if (lexing_check(shell, lexer))
+        return (free_lexer(lexer), free_herepipe(shell), 1);
     return (free_lexer(lexer), 0);
 }
 
@@ -1855,7 +1855,6 @@ char *heredoc_filler(char *end)
     buf = (char*)readline("heredoc> ");
     if(ft_strncmp(end, buf ,ft_strlen(end)) == 0)
     {   
-        printf("ON RENTRE DANS CETTE MERDE\n");
         free(buf);
         return (ft_calloc(1,1));
     }

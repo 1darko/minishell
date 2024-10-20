@@ -205,77 +205,77 @@ void print_cmd(t_cmd *cmd, int indent) {
 //     free(env);
 // }
 
-void free_cmd(t_cmd *cmd)
-{
-    if (!cmd)
-        return;
+// void free_cmd(t_cmd *cmd)
+// {
+//     if (!cmd)
+//         return;
 
-    // Depending on the type, cast to the appropriate command type and free
-    switch (cmd->type)
-    {
-        case 1:  // EXEC
-            {
-                t_execcmd *ecmd = (t_execcmd *)cmd;
-                for (int i = 0; i < MAXARGS && ecmd->args[i]; i++)
-                {
-                    free(ecmd->args[i]);
-                }
-                free(ecmd);
-            }
-            break;
-        case 2:  // PIPE
-            {
-                t_pipecmd *pcmd = (t_pipecmd *)cmd;
-                free_cmd(pcmd->left);
-                free_cmd(pcmd->right);
-                free(pcmd);
-            }
-            break;
-        case 3:  // REDIR
-            {
-                t_redircmd *rcmd = (t_redircmd *)cmd;
-                free(rcmd->file);
-                free(rcmd->efile);
-                free_cmd(rcmd->cmd);
-                free(rcmd);
-            }
-            break;
-        case 4:  // AND
-            {
-                t_andcmd *acmd = (t_andcmd *)cmd;
-                free_cmd(acmd->left);
-                free_cmd(acmd->right);
-                free(acmd);
-            }
-            break;
-        case 5:  // OR
-            {
-                t_orcmd *ocmd = (t_orcmd *)cmd;
-                free_cmd(ocmd->left);
-                free_cmd(ocmd->right);
-                free(ocmd);
-            }
-            break;
-        case 6:  // DOUBLE
-            {
-                t_doublecmd *dcmd = (t_doublecmd *)cmd;
-                free_cmd(dcmd->left);
-                free_cmd(dcmd->right);
-                free(dcmd);
-            }
-            break;
-        case 7:  // SUBSHELL
-            {
-                t_sub *scmd = (t_sub *)cmd;
-                free_cmd(scmd->cmd);
-                free(scmd);
-            }
-            break;
-        default:
-            free(cmd);
-            break;
-    }
-}
+//     // Depending on the type, cast to the appropriate command type and free
+//     switch (cmd->type)
+//     {
+//         case 1:  // EXEC
+//             {
+//                 t_execcmd *ecmd = (t_execcmd *)cmd;
+//                 for (int i = 0; i < MAXARGS && ecmd->args[i]; i++)
+//                 {
+//                     free(ecmd->args[i]);
+//                 }
+//                 free(ecmd);
+//             }
+//             break;
+//         case 2:  // PIPE
+//             {
+//                 t_pipecmd *pcmd = (t_pipecmd *)cmd;
+//                 free_cmd(pcmd->left);
+//                 free_cmd(pcmd->right);
+//                 free(pcmd);
+//             }
+//             break;
+//         case 3:  // REDIR
+//             {
+//                 t_redircmd *rcmd = (t_redircmd *)cmd;
+//                 free(rcmd->file);
+//                 free(rcmd->efile);
+//                 free_cmd(rcmd->cmd);
+//                 free(rcmd);
+//             }
+//             break;
+//         case 4:  // AND
+//             {
+//                 t_andcmd *acmd = (t_andcmd *)cmd;
+//                 free_cmd(acmd->left);
+//                 free_cmd(acmd->right);
+//                 free(acmd);
+//             }
+//             break;
+//         case 5:  // OR
+//             {
+//                 t_orcmd *ocmd = (t_orcmd *)cmd;
+//                 free_cmd(ocmd->left);
+//                 free_cmd(ocmd->right);
+//                 free(ocmd);
+//             }
+//             break;
+//         case 6:  // DOUBLE
+//             {
+//                 t_doublecmd *dcmd = (t_doublecmd *)cmd;
+//                 free_cmd(dcmd->left);
+//                 free_cmd(dcmd->right);
+//                 free(dcmd);
+//             }
+//             break;
+//         case 7:  // SUBSHELL
+//             {
+//                 t_sub *scmd = (t_sub *)cmd;
+//                 free_cmd(scmd->cmd);
+//                 free(scmd);
+//             }
+//             break;
+//         default:
+//             free(cmd);
+//             break;
+//     }
+// }
 
 // void free_shell(t_shell *shell)
 // {
@@ -290,29 +290,138 @@ void free_cmd(t_cmd *cmd)
 //     free(shell);  // Finally, free the shell itself
 // }
 
+// int bigsignal = 0;
 
-int main(int ac, char **av, char **env)
+// int main(int ac, char **av, char **env)
+// {
+//     t_cmd *tree;
+//     t_lexer *lex;
+//     t_shell *shell;
+//     shell = malloc(sizeof(t_shell));
+//     ft_bzero(shell, sizeof(t_shell));
+//     char *copy;
+
+//     copy = strdup(av[1]);
+//     parsecmd(&shell ,copy);
+//     if(shell->tree == NULL)
+//         printf("CEST NULL\n");
+//     print_cmd(shell->tree, 0);
+//     free(shell); // If lexer failed shell empty, if not plenty more to free
+//     // free_shell(shell);
+
+//     // free(shell);
+//     // tree_free(&shell->tree);
+//     //     // free(copy);
+//     //     return (0);
+//     // }
+//     free(copy);
+//     // ft_exec(tree, env);
+//     return (1);
+// }
+
+int bigsignal = 0;
+
+static char    **dupenv(char **ev)
 {
-    t_cmd *tree;
-    t_lexer *lex;
-    t_shell *shell;
+    char **env;
+    int    i;
+    
+    if (!ev)
+        return (calloc(1, sizeof(char *)));
+    i = 0;
+    while (ev[i])
+        i++;
+    env = calloc(sizeof(char *), i + 1);
+    while (i--)
+        env[i] = ft_strdup(ev[i]);
+    return (env);
+}
 
-    shell = malloc(sizeof(t_shell));
-    ft_bzero(shell, sizeof(t_shell));
-    char *copy;
+static t_shell    *fillshell(char **ev)
+{
+    t_shell    *shell;
+    
+    shell = calloc(sizeof(t_shell) , 1);
+    if (!shell)
+        return (0);
+    shell->env = dupenv(ev);
+    if (!shell->env)
+        return (free(shell), NULL);
+    shell->pipe = 0;
+    shell->tree = 0;
+    shell->type = SHELL;
+    return (shell);
+}
 
-    copy = strdup(av[1]);
-    parsecmd(&shell ,copy);
-    print_cmd(shell->tree, 0);
-    free(shell); // If lexer failed shell empty, if not plenty more to free
-    // free_shell(shell);
+static void    catcher(int signum)
+{
+    if (signum == SIGINT)
+    {
+        bigsignal = SIGINT;
+        printf("\n");
+        rl_on_new_line();
+        rl_replace_line("", 0);
+        rl_redisplay();
+    }
+}
 
-    // free(shell);
-    // tree_free(&shell->tree);
-    //     // free(copy);
-    //     return (0);
-    // }
-    // free(copy);
-    // ft_exec(tree, env);
-    return (1);
+
+static void    signals(void)
+{
+    struct sigaction int_action;
+    struct sigaction quit_action;
+
+    int_action.sa_handler = catcher;
+    int_action.sa_flags = 0;
+    sigemptyset(&int_action.sa_mask);
+    sigaddset(&int_action.sa_mask, SIGINT);
+    sigaction(SIGINT, &int_action, 0);
+    signal(SIGQUIT, SIG_IGN);
+}
+
+static int    checkerr(int err)
+{
+    if (bigsignal == SIGINT)
+    {
+        bigsignal = 0;
+        return (130);
+    }
+    return (err);
+}
+
+int    main(int ac, char **av, char **ev)
+{
+    int    err;
+    t_shell    *shell;
+    char    *buff;
+
+    if (!ac || !av)
+        return (333);
+    err = 0;
+    shell = fillshell(ev);
+    signals();
+    if (!shell)
+        return (1);
+    while (1)
+    {
+        bigsignal = 0;
+        buff = readline("minishell:~$");
+        if (!buff)
+            break ;
+        err = checkerr(err);
+        parsecmd(&shell, buff);
+        print_cmd(shell->tree, 0);
+        err = checkerr(err);
+        // execfree
+        // if(shell->tree == NULL)
+            // printf("IT IS NULL\n");
+        err = executer(shell, err);
+        add_history(buff);
+        free(buff);
+        
+    }
+    // arrayfree(shell->env);
+    free(shell);
+    rl_clear_history();
+    return (err);
 }

@@ -6,11 +6,23 @@
 /*   By: dakojic <dakojic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/26 13:26:02 by dakojic           #+#    #+#             */
-/*   Updated: 2024/10/03 10:52:48 by dakojic          ###   ########.fr       */
+/*   Updated: 2024/10/17 11:19:43 by dakojic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "minishell.h"
+
+static void	findredir(t_cmd *cmd, t_cmd **temp)
+{
+	*temp = cmd;
+	while ((*temp)->type == REDIR || (*temp)->type == HERE)
+	{
+		if (((t_redircmd *)(*temp))->cmd->type != REDIR
+		&& ((t_redircmd *)(*temp))->cmd->type != HERE)
+			break ;
+		*temp = ((t_redircmd *)(*temp))->cmd;
+	}
+}
 
 void	parseredirs_primo(t_herepipe **pipes, t_cmd **cmd, char **ps, int *c)
 {
@@ -65,16 +77,4 @@ t_cmd	*parseredirs_er(t_herepipe **pipes, t_cmd *cmd, char **ps)
 			return (NULL);
 	}
 	return (cmd);
-}
-
-void	findredir(t_cmd *cmd, t_cmd **temp)
-{
-	*temp = cmd;
-	while ((*temp)->type == REDIR || (*temp)->type == HERE)
-	{
-		if (((t_redircmd *)(*temp))->cmd->type != REDIR
-		&& ((t_redircmd *)(*temp))->cmd->type != HERE)
-			break ;
-		*temp = ((t_redircmd *)(*temp))->cmd;
-	}
 }
